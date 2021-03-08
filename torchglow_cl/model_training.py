@@ -26,13 +26,13 @@ def get_options():
     parser.add_argument("--epoch-warmup", help="warmup epochs", default=10, type=int)
     parser.add_argument("--weight-decay", help="l2 penalty for weight decay", default=0, type=float)
     # optimization parameter
-    parser.add_argument('--batch-valid', help='batch size for validation', default=50, type=int)
+    parser.add_argument('--batch-valid', help='batch size for validation', default=32, type=int)
     parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
     parser.add_argument('--num-workers', help='workers for dataloder', default=0, type=int)
     parser.add_argument('--gradient-checkpoint', help='gradient checkpoint for training', action='store_true')
     parser.add_argument('--fp16', help='fp16 for training', action='store_true')
     parser.add_argument('--progress-interval', help='log interval during training', default=100, type=int)
-    parser.add_argument('--epoch-valid', help='interval to run validation', default=32, type=int)
+    parser.add_argument('--epoch-valid', help='interval to run validation', default=10, type=int)
     parser.add_argument('--epoch-save', help='interval to save model weight', default=100000, type=int)
     # misc
     parser.add_argument('--debug', help='log level', action='store_true')

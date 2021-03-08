@@ -229,13 +229,13 @@ class Glow(nn.Module):
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer,
                         gradient_checkpointing=gradient_checkpointing)
                     logging.info('[epoch {}/{}] average bpd: {}'.format(
-                        e, self.config.epoch, round(mean_bpd, 2)))
+                        e, self.config.epoch, round(mean_bpd, 3)))
 
                     if e % epoch_valid == 0 and e != 0:
                         logging.debug('running validation')
                         mean_bpd = self.__valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
                         logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(
-                            e, self.config.epoch, round(mean_bpd, 2)))
+                            e, self.config.epoch, round(mean_bpd, 3)))
 
                     if e % epoch_save == 0 and e != 0:
                         self.config.save(self.model.state_dict(), epoch=e)
@@ -300,7 +300,7 @@ class Glow(nn.Module):
 
             if i % progress_interval == 0:
                 logging.info('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
-                    epoch_n, self.config.epoch, i, len(data_loader), round(bpd/len(x), 2), inst_lr))
+                    epoch_n, self.config.epoch, i, len(data_loader), round(bpd/len(x), 3), inst_lr))
 
         mean_bpe = total_bpd / data_size
         return mean_bpe
