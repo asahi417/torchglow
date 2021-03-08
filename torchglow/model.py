@@ -274,8 +274,7 @@ class Glow(nn.Module):
 
             # forward: output prediction and get loss
             if gradient_checkpointing:
-                raise NotImplementedError('TBA')
-                # _, nll = checkpoint_sequential(self.model, 3, x)
+                raise NotImplementedError('gradient_checkpointing is not implemented yet')
             else:
                 _, nll = self.model(x)
             nll = nll.sum()
@@ -299,7 +298,7 @@ class Glow(nn.Module):
             self.scaler.update()
 
             if i % progress_interval == 0:
-                logging.info('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
+                logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
                     epoch_n, self.config.epoch, i, len(data_loader), round(bpd/len(x), 3), inst_lr))
 
         mean_bpe = total_bpd / data_size
