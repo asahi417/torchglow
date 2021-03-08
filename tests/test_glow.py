@@ -25,7 +25,7 @@ class Test(unittest.TestCase):
             lu_decomposition=False,
             actnorm_scale=1
         )
-        model.train(gradient_checkpointing=False)
+        model.train()
         ckpt = model.checkpoint_dir
 
         # test reverse mode

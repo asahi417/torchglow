@@ -8,11 +8,11 @@ setup(
     name='torchglow',
     packages=find_packages(exclude=['tests']),
     version=VERSION,
-    # license='MIT',
-    description='TBA',
+    license='MIT',
+    description='Pytorch implementation of Glow.',
     url='https://github.com/asahi417/torchglow',
     # download_url="https://github.com/asahi417/torchglow/archive/v{}.tar.gz".format(VERSION),
-    keywords=['normalizing flow', 'torchglow'],
+    keywords=['normalizing flow', 'glow', 'machine learning', 'computer vision'],
     long_description=readme,
     long_description_content_type="text/markdown",
     author='Asahi Ushio',
@@ -36,5 +36,10 @@ setup(
         "tfrecord",
         "tensorboard"
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.6',
+    entry_points={
+        'console_scripts': [
+            'torchglow-train = torchglow_cl.model_training:main'
+        ]
+    }
 )

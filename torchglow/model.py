@@ -1,9 +1,10 @@
+""" Main network for Glow """
 import logging
 from math import log
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.checkpoint import checkpoint
+from torch.utils.checkpoint import checkpoint_sequential
 
 from .module import GlowNetwork
 from .config import Config
@@ -12,28 +13,71 @@ from .util import fix_seed, get_linear_schedule_with_warmup
 
 
 class Glow(nn.Module):
+    """ Main network for Glow """
 
     def __init__(self,
-                 training_step: int = 10,
-                 epoch: int = 10,
+                 training_step: int = 50000,
+                 epoch: int = 1000000,
                  data: str = 'cifar10',
-                 export_dir: str = None,
-                 batch: int = 8,
-                 lr: float = 0.0001,
+                 export_dir: str = './ckpt',
+                 batch: int = 64,
+                 lr: float = 0.001,
                  image_size: int = 32,
                  n_batch_init: int = 2,
                  filter_size: int = 512,
                  n_flow_step: int = 32,
                  n_level: int = 3,
                  actnorm_scale: float = 1.0,
-                 lu_decomposition: bool = True,
-                 random_seed: int = 1234,
+                 lu_decomposition: bool = False,
+                 random_seed: int = 0,
                  n_bits_x: int = 8,
-                 optimizer: str = 'adam',
-                 decay_lr: bool = True,
+                 decay_lr: bool = False,
                  epoch_warmup: int = 10,
                  weight_decay: float = 0,
                  checkpoint_path: str = None):
+        """ Main network for Glow
+
+        Parameters
+        ----------
+        training_step : int
+            Training step in single epoch.
+        epoch : int
+            Number of epochs.
+        data : str
+            Dataset (`cifar10` or `celeba`).
+        export_dir : str
+            Directory to ecxport model weight file.
+        batch : int
+            The size of batch.
+        lr : float
+            Learning rate.
+        image_size : int
+            Image resolution.
+        n_batch_init : int
+            The number of batch for data-dependent initialization.
+        filter_size : int
+            CNN filter size.
+        n_flow_step : int
+            The number of flow.
+        n_level : int
+            The number of blocks.
+        actnorm_scale : float
+            Factor to scale ActNorm layer.
+        lu_decomposition : bool
+            LU decomposed invertible CNN
+        random_seed : int
+            Random seed.
+        n_bits_x : int
+            The number of bit.
+        decay_lr : bool
+            Linear decay of learning rate after warmup.
+        epoch_warmup : int
+            Epochs to linearly warmup learning rate.
+        weight_decay : float
+            Penalty for l2 weight decay.
+        checkpoint_path : str
+            Path to checkpoint to load trained weight.
+        """
         super().__init__()
         fix_seed(random_seed)
         # config
@@ -42,7 +86,6 @@ class Glow(nn.Module):
             lr=lr,
             decay_lr=decay_lr,
             n_bits_x=n_bits_x,
-            optimizer=optimizer,
             epoch_warmup=epoch_warmup,
             image_size=image_size,
             training_step=training_step,
@@ -100,16 +143,6 @@ class Glow(nn.Module):
             num_training_steps=self.config.epoch if self.config.decay_lr else None)
         # GPU mixture precision
         self.scaler = torch.cuda.amp.GradScaler(enabled=fp16)
-        # if fp16:
-        #     try:
-        #         from apex import amp  # noqa: F401
-        #         self.model, self.optimizer = amp.initialize(
-        #             self.model, self.optimizer, opt_level='O1', max_loss_scale=2 ** 13, min_loss_scale=1e-5)
-        #         self.master_params = amp.master_params
-        #         self.scale_loss = amp.scale_loss
-        #         logging.debug('using `apex.amp`')
-        #     except ImportError:
-        #         ImportError("Skip apex: please install apex from https://www.github.com/nvidia/apex to use fp16")
         # multi-gpus
         if self.n_gpu > 1:
             # multi-gpu training (should be after apex fp16 initialization)
@@ -136,33 +169,36 @@ class Glow(nn.Module):
                     break
         return image_original[:sample_size], image_reconstruct[:sample_size]
 
-    # def sample(self, sample_size: int = 5, batch: int = 5):
-    #     """ Sapmle from learnt posterior """
-    #     assert self.config.is_trained, 'model is not trained'
-    #     _, data_valid, decoder = get_dataset(
-    #         self.config.data, cache_dir=cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
-    #     loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
-    #     image_original = []
-    #     image_reconstruct = []
-    #     with torch.no_grad():
-    #         for x, _ in loader:
-    #             z, _ = self.model(x.to(self.device), return_loss=False)
-    #             y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
-    #             image_original += decoder(x)
-    #
-    #             image_reconstruct += decoder(y)
-    #             if len(image_original) > sample_size:
-    #                 break
-    #     return image_original[:sample_size], image_reconstruct[:sample_size]
-
     def train(self,
-              batch_valid: int = None,
+              batch_valid: int = 32,
               cache_dir: str = None,
               num_workers: int = 0,
-              gradient_checkpointing: bool = True,
+              gradient_checkpointing: bool = False,
               fp16: bool = False,
               progress_interval: int = 100,
-              epoch_validation: int = 5):
+              epoch_valid: int = 100,
+              epoch_save: int = 100000):
+        """ Train Glow model
+
+        Parameters
+        ----------
+        batch_valid : int
+            The size of batch for validation.
+        cache_dir : int
+            Directory for cache the datasets.
+        num_workers : int
+            Workers for DataLoader.
+        gradient_checkpointing : bool
+            Gradient checkpointing to save memory.
+        fp16 : bool
+            Mixed precision to save memory.
+        progress_interval : int
+            Interval to log loss during training.
+        epoch_valid : int
+            Epoch to run validation eg) Every 100 epoch, it will run validation as default.
+        epoch_save : int
+            Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
+        """
         assert not self.config.is_trained, 'model has already been trained'
         batch_valid = self.config.batch if batch_valid is None else batch_valid
         writer = SummaryWriter(log_dir=self.config.cache_dir)
@@ -195,11 +231,13 @@ class Glow(nn.Module):
                     logging.info('[epoch {}/{}] average bpd: {}'.format(
                         e, self.config.epoch, round(mean_bpd, 2)))
 
-                    if e % epoch_validation == 0 and e != 0:
+                    if e % epoch_valid == 0 and e != 0:
                         logging.debug('running validation')
                         mean_bpd = self.__valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
                         logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(
                             e, self.config.epoch, round(mean_bpd, 2)))
+
+                    if e % epoch_save == 0 and e != 0:
                         self.config.save(self.model.state_dict(), epoch=e)
 
                     self.scheduler.step()
@@ -237,7 +275,7 @@ class Glow(nn.Module):
             # forward: output prediction and get loss
             if gradient_checkpointing:
                 raise NotImplementedError('TBA')
-                # _, nll = checkpoint(self.model, x)
+                # _, nll = checkpoint_sequential(self.model, 3, x)
             else:
                 _, nll = self.model(x)
             nll = nll.sum()
@@ -284,6 +322,4 @@ class Glow(nn.Module):
         mean_bpe = total_bpd / data_size
         writer.add_scalar('valid/bits_per_dim', mean_bpe, epoch_n)
         return mean_bpe
-
-
 

@@ -1,3 +1,4 @@
+""" Modules for Glow """
 from typing import List
 from math import log
 from scipy import linalg
@@ -360,6 +361,9 @@ class GlowNetwork(nn.Module):
            |       (n_level - 1)       |
            + --------------------------+
     """
+
+    # def __len__(self):
+    #     return len(self._modules)
 
     def __init__(self,
                  image_shape: List,
