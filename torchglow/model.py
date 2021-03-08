@@ -287,7 +287,7 @@ class Glow(nn.Module):
             self.scaler.scale(nll).backward()
 
             # bits per dimension
-            bpd = log(n_bins) / log(2) - nll.cpu().item()
+            bpd = nll.cpu().item() + log(n_bins) / log(2)
             total_bpd += bpd
             data_size += len(x)
             writer.add_scalar('train/bits_per_dim', bpd/len(x), i + epoch_n * len(data_loader))
