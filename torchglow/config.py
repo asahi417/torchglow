@@ -55,6 +55,7 @@ class Config:
 
     @staticmethod
     def get_random_string(exclude: List = None, length: int = 6):
+        print(exclude)
         while True:
             tmp = ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
             if exclude is None:
