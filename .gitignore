@@ -5,3 +5,5 @@ tests/output
 output
 _misc
 torchglow/reference
+tests/ckpt
+tests/img

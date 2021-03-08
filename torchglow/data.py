@@ -1,130 +1,219 @@
+""" Data iterators: `celba` and `cifar10`. """
+import os
+import struct
+import logging
+import requests
+import tarfile
+import zipfile
+from glob import glob
 
-import numpy as np
-# celeba https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar
+import torch
+import torchvision
+import torchvision.transforms as transforms
+from PIL import Image
+from tfrecord.torch.dataset import TFRecordDataset
 
-
-
-
-def downsample(x, resolution):
-    assert x.dtype == np.float32
-    assert x.shape[1] % resolution == 0
-    assert x.shape[2] % resolution == 0
-    if x.shape[1] == x.shape[2] == resolution:
-        return x
-    s = x.shape
-    x = np.reshape(x, [s[0], resolution, s[1] // resolution,
-                       resolution, s[2] // resolution, s[3]])
-    x = np.mean(x, (2, 4))
-    return x
-
-
-def x_to_uint8(x):
-    x = np.clip(np.floor(x), 0, 255)
-    return x.astype(np.uint8)
+# The original processed data used in Glow paper
+URLS = {'celeba': 'https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar'}
+CACHE_DIR = '{}/.cache/torchglow'.format(os.path.expanduser('~'))
+__all__ = ('get_dataset', 'get_decoder')
 
 
-def shard(data, shards, rank):
-    # Determinisitc shards
-    x, y = data
-    assert x.shape[0] == y.shape[0]
-    assert x.shape[0] % shards == 0
-    assert 0 <= rank < shards
-    size = x.shape[0] // shards
-    ind = rank*size
-    return x[ind:ind+size], y[ind:ind+size]
-
-
-def get_data(problem, shards, rank, data_augmentation_level, n_batch_train, n_batch_test, n_batch_init, resolution):
-    if problem == 'mnist':
-        from keras.datasets import mnist
-        (x_train, y_train), (x_test, y_test) = mnist.load_data()
-        y_train = np.reshape(y_train, [-1])
-        y_test = np.reshape(y_test, [-1])
-        # Pad with zeros to make 32x32
-        x_train = np.lib.pad(x_train, ((0, 0), (2, 2), (2, 2)), 'minimum')
-        # Pad with zeros to make 32x23
-        x_test = np.lib.pad(x_test, ((0, 0), (2, 2), (2, 2)), 'minimum')
-        x_train = np.tile(np.reshape(x_train, (-1, 32, 32, 1)), (1, 1, 1, 3))
-        x_test = np.tile(np.reshape(x_test, (-1, 32, 32, 1)), (1, 1, 1, 3))
-    elif problem == 'cifar10':
-        from keras.datasets import cifar10
-        (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-        y_train = np.reshape(y_train, [-1])
-        y_test = np.reshape(y_test, [-1])
+def wget(url, cache_dir):
+    filename = os.path.basename(url)
+    dst = '{}/{}'.format(cache_dir, filename)
+    if os.path.exists(dst):
+        logging.debug('found file at `{}`, skip `wget`'.format(dst))
     else:
-        raise Exception()
+        with open(dst, "wb") as f:
+            r = requests.get(url)
+            f.write(r.content)
+    return dst
 
-    print('n_train:', x_train.shape[0], 'n_test:', x_test.shape[0])
 
-    # Shard before any shuffling
-    x_train, y_train = shard((x_train, y_train), shards, rank)
-    x_test, y_test = shard((x_test, y_test), shards, rank)
+def open_compressed_file(url, cache_dir):
+    path = wget(url, cache_dir)
+    if path.endswith('.tar') or path.endswith('.tar.gz') or path.endswith('.tgz'):
+        tar = tarfile.open(path)
+        tar.extractall(cache_dir)
+        tar.close()
+    elif path.endswith('.zip'):
+        with zipfile.ZipFile(path, 'r') as zip_ref:
+            zip_ref.extractall(cache_dir)
 
-    print('n_shard_train:', x_train.shape[0], 'n_shard_test:', x_test.shape[0])
 
-    from keras.preprocessing.image import ImageDataGenerator
-    datagen_test = ImageDataGenerator()
-    if data_augmentation_level == 0:
-        datagen_train = ImageDataGenerator()
+def create_index(tfrecord_dir: str):
+    """ Create index from the directory of tfrecords files.
+    Stores starting location (byte) and length (in bytes) of each serialized record.
+
+    Params:
+    -------
+    tfrecord_dir: str
+        Path to the TFRecord file.
+    """
+    tfr_files = glob('{}/*.tfrecords'.format(tfrecord_dir))
+    assert len(tfr_files),  'no tfrecords found at {}'.format(tfr_files)
+    logging.debug('creating index from tfrecords: {} files will be processed'.format(len(tfr_files)))
+    for n, tfrecord_file in enumerate(tfr_files):
+        index_file = tfrecord_file.replace('.tfrecords', '.index')
+        if os.path.exists(index_file):
+            continue
+        logging.debug('\t * process {}/{}: {}'.format(n, len(tfr_files), tfrecord_file))
+        infile = open(tfrecord_file, "rb")
+        outfile = open(index_file, "w")
+
+        while True:
+            current = infile.tell()
+            byte_len = infile.read(8)
+            if len(byte_len) == 0:
+                break
+            infile.read(4)
+            proto_len = struct.unpack("q", byte_len)[0]
+            infile.read(proto_len)
+            infile.read(4)
+            outfile.write(str(current) + " " + str(infile.tell() - current) + "\n")
+        infile.close()
+        outfile.close()
+    logging.debug('finish indexing')
+
+
+class Dataset(torch.utils.data.Dataset):
+    """ CelebA data iterator """
+
+    def __init__(self,
+                 tfrecord_dir: str,
+                 root: str,
+                 train: bool,
+                 transform,
+                 n_bits_x: int = 5,
+                 data: str = 'celeba'):
+        self.root = root
+        self.train = train
+        self.transform = transform
+        self.n_bits_x = n_bits_x
+
+        # download celeba tfrecord files
+        if not os.path.exists(tfrecord_dir):
+            open_compressed_file(URLS[data], root)
+        self.tfr_files = sorted(glob('{}/*.tfrecords'.format(tfrecord_dir)))
+
+        # create unique index
+        create_index(tfrecord_dir)
+
+        # create global index, id: (tfrecord file, index in the tfr file)
+        self.data_index = {}
+        n = 0
+        for i in self.tfr_files:
+            with open(i.replace('tfrecords', 'index'), 'r') as f:
+                data_size = len(list(filter(len, f.read().split('\n'))))
+            for i_ in range(data_size):
+                self.data_index[n] = (i, i_)
+                n += 1
+
+    def __len__(self):
+        return len(self.data_index)
+
+    def __getitem__(self, idx):
+        tfr_file, n = self.data_index[idx]
+        # load tfrecord
+        dataset = TFRecordDataset(tfr_file, tfr_file.replace('tfrecords', 'index'))
+        single_data = list(dataset)[n]
+        img = single_data['data'].reshape(single_data['shape']).astype('float32')
+        # normalize image to [0, 1]
+        img = (img / 2 ** (8 - self.n_bits_x)).round() / (2. ** self.n_bits_x)
+        # apply transformation
+        img = self.transform(img)
+        return img, single_data['label'][0]
+
+
+class AddNoise(object):
+    """ Add uniform noise to image. """
+
+    def __init__(self, mean=0., std=1.):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, tensor):
+        return tensor + (torch.rand(tensor.size()) - 0.5 + self.mean) * self.std
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+
+
+def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size: int = None):
+    """ Get dataset iterator.
+
+    Parameters
+    ----------
+    data : str
+        Dataset either of `celeba` or `cifar10`.
+    cache_dir : str
+        (optional) Root directory to store cached data files.
+    n_bits_x : int
+        (optional) Number of bits of image.
+    image_size : int
+        (optional) Image size to rescale.
+
+    Returns
+    -------
+    train_set : torch.utils.data.Dataset
+        Iterator of training set for torch.utils.data.DataLoader.
+    valid_set : torch.utils.data.Dataset
+        Iterator of validation set for torch.utils.data.DataLoader.
+    """
+    cache_dir = CACHE_DIR if cache_dir is None else cache_dir
+    n_bins = 2 ** n_bits_x
+
+    t_valid = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1])])
+
+    t_train = []
+    if image_size:
+        t_train.append(transforms.Resize(image_size))
+    t_train += [
+        transforms.ToTensor(),  # convert to float tensor scaled in [0, 1], and reshape HWC to CHW
+        transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1]),  # centering pixel
+    ]
+
+    if data == 'cifar10':
+        assert n_bits_x == 8, 'cifar10 does not support n_bits_x != 8'
+
+        t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
+        t_train.append(AddNoise(0, 1 / n_bins))  # add random noise to pixel
+        t_train = transforms.Compose(t_train)
+
+        train_set = torchvision.datasets.CIFAR10(root=cache_dir, train=True, download=True, transform=t_train)
+        valid_set = torchvision.datasets.CIFAR10(root=cache_dir, train=False, download=True, transform=t_valid)
+    elif data == 'celeba':
+        t_train.append(AddNoise(0, 1 / n_bins))  # add random noise to pixel
+        t_train = transforms.Compose(t_train)
+        train_set = Dataset(
+            '{}/celeba-tfr/train'.format(cache_dir), root=cache_dir, train=True, transform=t_train)
+        valid_set = Dataset(
+            '{}/celeba-tfr/validation'.format(cache_dir), root=cache_dir, train=False, transform=t_valid)
     else:
-        if problem == 'mnist':
-            datagen_train = ImageDataGenerator(
-                width_shift_range=0.1,
-                height_shift_range=0.1
-            )
-        elif problem == 'cifar10':
-            if data_augmentation_level == 1:
-                datagen_train = ImageDataGenerator(
-                    width_shift_range=0.1,
-                    height_shift_range=0.1
-                )
-            elif data_augmentation_level == 2:
-                datagen_train = ImageDataGenerator(
-                    width_shift_range=0.1,
-                    height_shift_range=0.1,
-                    horizontal_flip=True,
-                    rotation_range=15,  # degrees rotation
-                    zoom_range=0.1,
-                    shear_range=0.02,
-                )
-            else:
-                raise Exception()
-        else:
-            raise Exception()
-
-    datagen_train.fit(x_train)
-    datagen_test.fit(x_test)
-    train_flow = datagen_train.flow(x_train, y_train, n_batch_train)
-    test_flow = datagen_test.flow(x_test, y_test, n_batch_test, shuffle=False)
-
-    def make_iterator(flow, resolution):
-        def iterator():
-            x_full, y = flow.next()
-            x_full = x_full.astype(np.float32)
-            x = downsample(x_full, resolution)
-            x = x_to_uint8(x)
-            return x, y
-
-        return iterator
-
-    #init_iterator = make_iterator(train_flow, resolution)
-    train_iterator = make_iterator(train_flow, resolution)
-    test_iterator = make_iterator(test_flow, resolution)
-
-    # Get data for initialization
-    data_init = make_batch(train_iterator, n_batch_train, n_batch_init)
-
-    return train_iterator, test_iterator, data_init
+        raise ValueError('unknown data: {}'.format(data))
+    return train_set, valid_set
 
 
-def make_batch(iterator, iterator_batch_size, required_batch_size):
-    ib, rb = iterator_batch_size, required_batch_size
-    #assert rb % ib == 0
-    k = int(np.ceil(rb / ib))
-    xs, ys = [], []
-    for i in range(k):
-        x, y = iterator()
-        xs.append(x)
-        ys.append(y)
-    x, y = np.concatenate(xs)[:rb], np.concatenate(ys)[:rb]
-    return {'x': x, 'y': y}
+def get_decoder(n_bits_x: int = 8):
+    """ Get tensor decoder to get image. """
+    n_bins = 2 ** n_bits_x
+
+    def convert_tensor_to_img(v, pil: bool = True):
+        """ decoder to recover image from tensor """
+
+        def single_img(v_):
+            v_ = v_.transpose(1, 2, 0)
+            img = (((v_ + .5) * n_bins).round(0) * (256 / n_bins)).clip(0, 255).astype('uint8')
+            if pil:
+                img = Image.fromarray(img, 'RGB')
+            return img
+
+        if type(v) is torch.Tensor:
+            v = v.cpu().numpy()
+        assert v.ndim in [3, 4], v.shape
+        if v.ndim == 3:
+            return single_img(v)
+        return [single_img(_v) for _v in v]
+
+    return convert_tensor_to_img

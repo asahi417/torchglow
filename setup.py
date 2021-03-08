@@ -31,7 +31,10 @@ setup(
         "torch",
         "tqdm",
         "torchvision",
-        "keras"
+        "keras",
+        "requests",
+        "tfrecord",
+        "tensorboard"
     ],
     python_requires='>=3.6'
 )
