@@ -23,7 +23,7 @@ def get_options():
     parser.add_argument('--random-seed', help='random seed', default=0, type=int)
     parser.add_argument('--n-bits-x', help='number of bits', default=8, type=int)
     parser.add_argument('--decay-lr', help='linear decay of learning rate after warmup', action='store_true')
-    parser.add_argument("--epochs-warmup", help="warmup epochs", default=10, type=int)
+    parser.add_argument("--epoch-warmup", help="warmup epochs", default=10, type=int)
     parser.add_argument("--weight-decay", help="l2 penalty for weight decay", default=0, type=float)
     # optimization parameter
     parser.add_argument('--batch-valid', help='batch size for validation', default=50, type=int)
