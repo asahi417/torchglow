@@ -55,10 +55,12 @@ class Config:
 
     @staticmethod
     def get_random_string(exclude: List = None, length: int = 6):
-        tmp = ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
-        if exclude:
-            while tmp in exclude:
-                tmp = ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
+        while True:
+            tmp = ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
+            if exclude is None:
+                break
+            elif tmp not in exclude:
+                break
         return tmp
 
     @staticmethod
