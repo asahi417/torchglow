@@ -26,9 +26,7 @@ class Config:
             for k, v in self.config.items():
                 logging.info('\t * {}: {}'.format(k, v))
             ex_configs = {i: self.safe_open(i) for i in glob('{}/*/config.json'.format(export_dir))}
-            print(ex_configs)
             same_config = list(filter(lambda x: x[1] == self.config, ex_configs.items()))
-            print(same_config)
             assert len(same_config) == 0, 'checkpoint already exists: '.format(same_config[0])
             self.cache_dir = '{}/{}'.format(export_dir, self.get_random_string(
                 [os.path.basename(i.replace('/config.json', '')) for i in ex_configs.keys()]
@@ -57,7 +55,6 @@ class Config:
 
     @staticmethod
     def get_random_string(exclude: List = None, length: int = 6):
-        print(exclude)
         while True:
             tmp = ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
             if exclude is None:
