@@ -31,7 +31,7 @@ class Config:
             print(same_config)
             assert len(same_config) == 0, 'checkpoint already exists: '.format(same_config[0])
             self.cache_dir = '{}/{}'.format(export_dir, self.get_random_string(
-                [os.path.basename(i.replace('config.json', '')) for i in ex_configs.keys()]
+                [os.path.basename(i.replace('/config.json', '')) for i in ex_configs.keys()]
             ))
         self.__dict__.update(self.config)
         self.model_weight_path = '{}/model.pt'.format(self.cache_dir)
