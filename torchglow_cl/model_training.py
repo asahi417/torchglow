@@ -8,13 +8,13 @@ def get_options():
     parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
     # model parameter
     parser.add_argument('-s', '--training-step', help='training step in single epoch', default=50000, type=int)
-    parser.add_argument('-e', '--epoch', help='training epochs', default=1000000, type=int)
+    parser.add_argument('-e', '--epoch', help='training epochs', default=2000, type=int)
     parser.add_argument('-d', '--data', help='data set from `celeba`, `cifar10`', default='cifar10', type=str)
     parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt', type=str)
     parser.add_argument('-b', '--batch', help='batch size', default=64, type=int)
     parser.add_argument('--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('--image-size', help='image size', default=32, type=int)
-    parser.add_argument('--n-batch-init', help='number of batch for data dependent initialization', default=4, type=int)
+    parser.add_argument('--batch-init', help='number of batch for data dependent initialization', default=256, type=int)
     parser.add_argument('--filter-size', help='CNN filter size', default=512, type=int)
     parser.add_argument('--n-flow-step', help='number of flow in single block', default=32, type=int)
     parser.add_argument('--n-level', help='number of block', default=3, type=int)
@@ -26,14 +26,14 @@ def get_options():
     parser.add_argument("--epoch-warmup", help="warmup epochs", default=10, type=int)
     parser.add_argument("--weight-decay", help="l2 penalty for weight decay", default=0, type=float)
     # optimization parameter
-    parser.add_argument('--batch-valid', help='batch size for validation', default=32, type=int)
+    parser.add_argument('--batch-valid', help='batch size for validation', default=64, type=int)
     parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
     parser.add_argument('--num-workers', help='workers for dataloder', default=0, type=int)
     parser.add_argument('--gradient-checkpoint', help='gradient checkpoint for training', action='store_true')
     parser.add_argument('--fp16', help='fp16 for training', action='store_true')
     parser.add_argument('--progress-interval', help='log interval during training', default=100, type=int)
     parser.add_argument('--epoch-valid', help='interval to run validation', default=10, type=int)
-    parser.add_argument('--epoch-save', help='interval to save model weight', default=100000, type=int)
+    parser.add_argument('--epoch-save', help='interval to save model weight', default=1000, type=int)
     # misc
     parser.add_argument('--debug', help='log level', action='store_true')
     return parser.parse_args()
@@ -53,7 +53,7 @@ def main():
         batch=opt.batch,
         lr=opt.lr,
         image_size=opt.image_size,
-        n_batch_init=opt.n_batch_init,
+        batch_init=opt.batch_init,
         filter_size=opt.filter_size,
         n_flow_step=opt.n_flow_step,
         n_level=opt.n_level,

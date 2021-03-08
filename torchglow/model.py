@@ -23,7 +23,7 @@ class Glow(nn.Module):
                  batch: int = 64,
                  lr: float = 0.001,
                  image_size: int = 32,
-                 n_batch_init: int = 2,
+                 batch_init: int = 256,
                  filter_size: int = 512,
                  n_flow_step: int = 32,
                  n_level: int = 3,
@@ -53,7 +53,7 @@ class Glow(nn.Module):
             Learning rate.
         image_size : int
             Image resolution.
-        n_batch_init : int
+        batch_init : int
             The number of batch for data-dependent initialization.
         filter_size : int
             CNN filter size.
@@ -100,7 +100,7 @@ class Glow(nn.Module):
             lu_decomposition=lu_decomposition,
             random_seed=random_seed,
             weight_decay=weight_decay,
-            n_batch_init=n_batch_init
+            batch_init=batch_init
         )
         # model
         self.model = GlowNetwork(
@@ -212,7 +212,7 @@ class Glow(nn.Module):
 
         logging.debug('data-dependent initialization')
         loader = torch.utils.data.DataLoader(
-            data_train, batch_size=self.config.batch * self.config.n_batch_init)
+            data_train, batch_size=self.config.batch_init, shuffle=True)
         self.__data_dependent_initialization(loader)
 
         logging.info('start model training')
@@ -251,25 +251,20 @@ class Glow(nn.Module):
 
     def __data_dependent_initialization(self, data_loader):
         with torch.no_grad():
-            for x, _ in data_loader:
-                x = x.to(self.device)
-                self.model(x, return_loss=False)
-                break
+            loader = iter(data_loader)
+            x, _ = next(loader)
+            x = x.to(self.device)
+            self.model(x, return_loss=False)
 
     def __train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval, gradient_checkpointing):
         self.model.train()
         n_bins = 2 ** self.config.n_bits_x
-        if self.config.training_step is not None:
-            step_in_epoch = int(round(self.config.training_step / self.config.batch))
-        else:
-            step_in_epoch = len(data_loader)
-
-        total_bpd = 0.0
+        step_in_epoch = int(round(self.config.training_step / self.config.batch))
+        data_loader = iter(data_loader)
+        total_nll = 0.0
         data_size = 0
-        for i, (x, _) in enumerate(data_loader, 1):
-
-            if i > step_in_epoch:
-                break
+        for i in range(step_in_epoch):
+            x, _ = next(data_loader)
             x = x.to(self.device)
 
             # forward: output prediction and get loss
@@ -286,39 +281,39 @@ class Glow(nn.Module):
             self.scaler.scale(nll).backward()
 
             # bits per dimension
-            bpd = nll.cpu().item() + log(n_bins) / log(2)
-            total_bpd += bpd
+            total_nll += nll.cpu().item()
             data_size += len(x)
-            writer.add_scalar('train/bits_per_dim', bpd/len(x), i + epoch_n * len(data_loader))
+            bpd = total_nll/data_size + log(n_bins) / log(2)
+            writer.add_scalar('train/bits_per_dim', bpd, i + epoch_n * step_in_epoch)
 
             # update optimizer
             inst_lr = self.optimizer.param_groups[0]['lr']
-            writer.add_scalar('train/learning_rate', inst_lr, i + epoch_n * len(data_loader))
+            writer.add_scalar('train/learning_rate', inst_lr, i + epoch_n * step_in_epoch)
             self.scaler.step(self.optimizer)
             self.scaler.update()
 
             if i % progress_interval == 0:
                 logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
-                    epoch_n, self.config.epoch, i, len(data_loader), round(bpd/len(x), 3), inst_lr))
+                    epoch_n, self.config.epoch, i, step_in_epoch, round(bpd, 3), inst_lr))
 
-        mean_bpe = total_bpd / data_size
-        return mean_bpe
+        bpd = total_nll/data_size + log(n_bins) / log(2)
+        return bpd
 
     def __valid_single_epoch(self, data_loader, epoch_n: int, writer):
         self.model.eval()
         n_bins = 2 ** self.config.n_bits_x
-        total_bpd = 0
+        total_nll = 0
         data_size = 0
         with torch.no_grad():
             for x, _ in data_loader:
                 x = x.to(self.device)
                 # forward: output prediction and get loss
                 _, nll = self.model(x)
-                nll = nll.sum()
-                # bits per dimension
-                total_bpd += log(n_bins) / log(2) - nll.cpu().item()
+                total_nll += nll.sum().cpu().item()
                 data_size += len(x)
-        mean_bpe = total_bpd / data_size
-        writer.add_scalar('valid/bits_per_dim', mean_bpe, epoch_n)
-        return mean_bpe
+
+        # bits per dimension
+        bpd = total_nll / data_size + log(n_bins) / log(2)
+        writer.add_scalar('valid/bits_per_dim', bpd, epoch_n)
+        return bpd
 
