@@ -1,5 +1,6 @@
 """ Train Glow model on built-in dataset """
 import argparse
+import logging
 import torchglow
 
 
@@ -33,11 +34,16 @@ def get_options():
     parser.add_argument('--progress-interval', help='log interval during training', default=100, type=int)
     parser.add_argument('--epoch-valid', help='interval to run validation', default=32, type=int)
     parser.add_argument('--epoch-save', help='interval to save model weight', default=100000, type=int)
+    # misc
+    parser.add_argument('--debug', help='log level', action='store_true')
     return parser.parse_args()
 
 
 def main():
     opt = get_options()
+    level = logging.DEBUG if opt.debug else logging.INFO
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
+
     # train model
     trainer = torchglow.Glow(
         training_step=opt.training_step,
