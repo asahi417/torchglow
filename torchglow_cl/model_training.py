@@ -18,7 +18,7 @@ def get_options():
     parser.add_argument('--filter-size', help='CNN filter size', default=512, type=int)
     parser.add_argument('--n-flow-step', help='number of flow in single block', default=32, type=int)
     parser.add_argument('--n-level', help='number of block', default=3, type=int)
-    parser.add_argument('--actnotm-scale', help='actnorm scaler', default=1, type=float)
+    parser.add_argument('--actnorm-scale', help='actnorm scaler', default=1, type=float)
     parser.add_argument('--lu-decomposition', help='LU decompose invertible CNN', action='store_true')
     parser.add_argument('--random-seed', help='random seed', default=0, type=int)
     parser.add_argument('--n-bits-x', help='number of bits', default=8, type=int)
