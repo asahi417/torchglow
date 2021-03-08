@@ -7,11 +7,11 @@ import torchglow
 def get_options():
     parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
     # model parameter
-    parser.add_argument('--training-step', help='training step in single epoch', default=50000, type=int)
-    parser.add_argument('--epoch', help='training epochs', default=1000000, type=int)
-    parser.add_argument('--data', help='data set from `celeba`, `cifar10`', default='cifar10', type=str)
+    parser.add_argument('-s', '--training-step', help='training step in single epoch', default=50000, type=int)
+    parser.add_argument('-e', '--epoch', help='training epochs', default=1000000, type=int)
+    parser.add_argument('-d', '--data', help='data set from `celeba`, `cifar10`', default='cifar10', type=str)
     parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt', type=str)
-    parser.add_argument('--batch', help='batch size', default=64, type=int)
+    parser.add_argument('-b', '--batch', help='batch size', default=64, type=int)
     parser.add_argument('--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('--image-size', help='image size', default=32, type=int)
     parser.add_argument('--n-batch-init', help='number of batch for data dependent initialization', default=4, type=int)
