@@ -231,7 +231,7 @@ class Glow(nn.Module):
                     logging.info('[epoch {}/{}] average bpd: {}'.format(
                         e, self.config.epoch, round(mean_bpd, 3)))
 
-                    if e % epoch_valid == 0 and e != 0:
+                    if e % epoch_valid == 0:
                         logging.debug('running validation')
                         mean_bpd = self.__valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
                         logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(
