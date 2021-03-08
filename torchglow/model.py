@@ -123,7 +123,7 @@ class Glow(nn.Module):
         self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
 
         if self.config.is_trained:
-            logging.info('loading weight from '.format(self.config.cache_dir))
+            logging.info('loading weight from {}'.format(self.config.cache_dir))
             self.model.load_state_dict(torch.load(self.config.model_weight_path))
 
         # model on gpu
