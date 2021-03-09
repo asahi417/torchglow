@@ -275,11 +275,14 @@ class Glow(nn.Module):
             self.model(x, return_loss=False, initialize_actnorm=True)
 
     def __train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval, gradient_checkpointing):
+        if gradient_checkpointing:
+            raise NotImplementedError('gradient_checkpointing is not implemented yet')
+
         self.model.train()
         n_bins = 2 ** self.config.n_bits_x
         step_in_epoch = int(round(self.config.training_step / self.config.batch))
         data_loader = iter(data_loader)
-        total_nll = 0
+        total_bpd = 0
         data_size = 0
         for i in range(step_in_epoch):
             x, _ = next(data_loader)
@@ -289,47 +292,51 @@ class Glow(nn.Module):
             # zero the parameter gradients
             self.optimizer.zero_grad()
             # forward: output prediction and get loss
-            if gradient_checkpointing:
-                raise NotImplementedError('gradient_checkpointing is not implemented yet')
-            else:
-                _, nll = self.model(x)
+            _, nll = self.model(x)
+            bpd = (nll + log(n_bins)) / log(2)
+
             # backward: calculate gradient
-            self.scaler.scale(nll.mean()).backward()
+            self.scaler.scale(bpd.mean()).backward()
 
             # bits per dimension
-            total_nll += nll.sum().cpu().item()
-            data_size += len(x)
-            bpd = total_nll/data_size + log(n_bins) / log(2)
-            writer.add_scalar('train/bits_per_dim', bpd, i + epoch_n * step_in_epoch)
+            inst_bpd = bpd.mean().cpu().item()
+            writer.add_scalar('train/bits_per_dim', inst_bpd, i + epoch_n * step_in_epoch)
 
             # update optimizer
             inst_lr = self.optimizer.param_groups[0]['lr']
             writer.add_scalar('train/learning_rate', inst_lr, i + epoch_n * step_in_epoch)
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
 
             if i % progress_interval == 0:
                 logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
-                    epoch_n, self.config.epoch, i, step_in_epoch, round(bpd, 3), inst_lr))
+                    epoch_n, self.config.epoch, i, step_in_epoch, round(inst_bpd, 3), inst_lr))
 
-        bpd = total_nll/data_size + log(n_bins) / log(2)
-        return bpd
+            # aggregate average bpd over epoch
+            total_bpd += bpd.sum().cpu().item()
+            data_size += len(x)
+
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+
+        return total_bpd / data_size
 
     def __valid_single_epoch(self, data_loader, epoch_n: int, writer):
         self.model.eval()
         n_bins = 2 ** self.config.n_bits_x
-        total_nll = 0
+        total_bpd = 0
         data_size = 0
         with torch.no_grad():
             for x, _ in data_loader:
                 x = x.to(self.device)
+                # https://github.com/openai/glow/issues/43
+                x = x + torch.rand_like(x) / n_bins
                 # forward: output prediction and get loss
                 _, nll = self.model(x)
-                total_nll += nll.sum().cpu().item()
+                bpd = (nll + log(n_bins)) / log(2)
+                total_bpd += bpd.sum().cpu().item()
                 data_size += len(x)
 
         # bits per dimension
-        bpd = total_nll / data_size + log(n_bins) / log(2)
+        bpd = total_bpd / data_size
         writer.add_scalar('valid/bits_per_dim', bpd, epoch_n)
         return bpd
 

@@ -126,20 +126,6 @@ class Dataset(torch.utils.data.Dataset):
         return img, single_data['label'][0]
 
 
-class AddNoise(object):
-    """ Add uniform noise to image. """
-
-    def __init__(self, mean=0., std=1.):
-        self.mean = mean
-        self.std = std
-
-    def __call__(self, tensor):
-        return tensor + (torch.rand(tensor.size()) - 0.5 + self.mean) * self.std
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
-
-
 def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size: int = None):
     """ Get dataset iterator.
 
@@ -178,13 +164,11 @@ def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size:
         assert n_bits_x == 8, 'cifar10 does not support n_bits_x != 8'
 
         # t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
-        # t_train.append(AddNoise(0, 1 / n_bins))  # add random noise to pixel
         t_train = transforms.Compose(t_train)
 
         train_set = torchvision.datasets.CIFAR10(root=cache_dir, train=True, download=True, transform=t_train)
         valid_set = torchvision.datasets.CIFAR10(root=cache_dir, train=False, download=True, transform=t_valid)
     elif data == 'celeba':
-        t_train.append(AddNoise(0, 1 / n_bins))  # add random noise to pixel
         t_train = transforms.Compose(t_train)
         train_set = Dataset(
             '{}/celeba-tfr/train'.format(cache_dir), root=cache_dir, train=True, transform=t_train)

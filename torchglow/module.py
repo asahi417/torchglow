@@ -475,7 +475,7 @@ class GlowNetwork(nn.Module):
                     x, log_det = layer(x, log_det=log_det)
 
             if log_det is not None:
-                nll = - log_det / (log(2) * self.pixel_size)
+                nll = - log_det / self.pixel_size
             else:
                 nll = None
             return latent_states, nll
