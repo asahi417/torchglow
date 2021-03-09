@@ -284,6 +284,8 @@ class Glow(nn.Module):
         for i in range(step_in_epoch):
             x, _ = next(data_loader)
             x = x.to(self.device)
+            # https://github.com/openai/glow/issues/43
+            x = x + torch.rand_like(x) / n_bins
             # zero the parameter gradients
             self.optimizer.zero_grad()
             # forward: output prediction and get loss
