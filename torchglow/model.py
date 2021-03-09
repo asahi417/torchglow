@@ -35,6 +35,7 @@ class Glow(nn.Module):
                  epoch_warmup: int = 10,
                  weight_decay: float = 0,
                  optimizer: str = 'adamax',
+                 momentum: float = 0.9,
                  checkpoint_path: str = None):
         """ Main network for Glow
 
@@ -102,7 +103,8 @@ class Glow(nn.Module):
             random_seed=random_seed,
             weight_decay=weight_decay,
             optimizer=optimizer,
-            batch_init=batch_init
+            batch_init=batch_init,
+            momentum=momentum
         )
         # model
         self.model = GlowNetwork(
@@ -145,7 +147,7 @@ class Glow(nn.Module):
                 self.model.parameters(), lr=self.config.lr)
         elif self.config.optimizer == 'sgd':
             self.optimizer = torch.optim.SGD(
-                self.model.parameters(), lr=self.config.lr)
+                self.model.parameters(), lr=self.config.lr, momentum=self.config.momentum)
         elif self.config.optimizer == 'adamw':
             self.optimizer = torch.optim.AdamW(
                 self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
@@ -243,8 +245,9 @@ class Glow(nn.Module):
                     mean_bpd = self.__train_single_epoch(
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer,
                         gradient_checkpointing=gradient_checkpointing)
-                    logging.info('[epoch {}/{}] average bpd: {}'.format(
-                        e, self.config.epoch, round(mean_bpd, 3)))
+                    inst_lr = self.optimizer.param_groups[0]['lr']
+                    logging.info('[epoch {}/{}] average bpd: {}: lr {}'.format(
+                        e, self.config.epoch, round(mean_bpd, 3), inst_lr))
 
                     if e % epoch_valid == 0 and e != 0:
                         logging.debug('running validation')
@@ -276,7 +279,7 @@ class Glow(nn.Module):
         n_bins = 2 ** self.config.n_bits_x
         step_in_epoch = int(round(self.config.training_step / self.config.batch))
         data_loader = iter(data_loader)
-        total_nll = 0.0
+        total_nll = 0
         data_size = 0
         for i in range(step_in_epoch):
             x, _ = next(data_loader)
