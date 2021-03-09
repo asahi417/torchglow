@@ -143,6 +143,9 @@ class Glow(nn.Module):
         elif self.config.optimizer == 'adam':
             self.optimizer = torch.optim.AdamW(
                 self.model.parameters(), lr=self.config.lr)
+        elif self.config.optimizer == 'sgd':
+            self.optimizer = torch.optim.SGD(
+                self.model.parameters(), lr=self.config.lr)
         elif self.config.optimizer == 'adamw':
             self.optimizer = torch.optim.AdamW(
                 self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
