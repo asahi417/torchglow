@@ -284,7 +284,10 @@ class Glow(nn.Module):
         total_bpd = 0
         data_size = 0
         for i in range(step_in_epoch):
-            x, _ = next(data_loader)
+            try:
+                x, _ = next(data_loader)
+            except StopIteration:
+                break
             x = x.to(self.device)
             # https://github.com/openai/glow/issues/43
             x = x + torch.rand_like(x) / n_bins

@@ -275,9 +275,9 @@ class Split(nn.Module):
 
     def __init__(self, in_channels, split: bool = True):
         super().__init__()
-        assert in_channels & 2 == 0, in_channels
         self.split = split
         if self.split:
+            assert in_channels % 2 == 0, in_channels
             self.conv = ZeroConv2d(in_channels // 2, in_channels)
         else:
             self.conv = ZeroConv2d(in_channels, in_channels * 2)

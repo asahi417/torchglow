@@ -7,4 +7,5 @@ _misc
 torchglow/reference
 tests/ckpt
 tests/img
-ckpt
+tests/data_sample
+ckpt*

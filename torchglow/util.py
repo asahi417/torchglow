@@ -1,5 +1,6 @@
 import random
-
+import os
+import pickle
 import numpy as np
 import torch
 from torch.optim.lr_scheduler import LambdaLR
@@ -43,3 +44,16 @@ def get_linear_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
         )
 
     return LambdaLR(optimizer, lr_lambda, last_epoch)
+
+
+def save_pickle(_list, export_dir, chunk_size: int):
+    os.makedirs(export_dir, exist_ok=True)
+    for s_n, n in enumerate(range(0, len(_list), chunk_size)):
+        _list_sub = _list[n:min(n + chunk_size, len(_list))]
+        with open('{}/list.{}.pkl'.format(export_dir, s_n), "wb") as fp:
+            pickle.dump(_list_sub, fp)
+
+
+def load_pickle(path):
+    with open(path, "rb") as fp:
+        return pickle.load(fp)

@@ -7,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from .module import FlowStep, Split
 from ..util import fix_seed, get_linear_schedule_with_warmup
 from ..config import Config
+from ..data_1d import get_dataset_1d
 
 
 class GlowNetwork1D(nn.Module):
@@ -108,6 +109,7 @@ class Glow1D(nn.Module):
 
     def __init__(self,
                  path_to_data: str,
+                 path_to_data_valid: str = None,
                  training_step: int = 500,
                  epoch: int = 1000,
                  export_dir: str = './ckpt',
@@ -166,6 +168,7 @@ class Glow1D(nn.Module):
         # config
         self.config = Config(
             path_to_data=path_to_data,
+            path_to_data_valid=path_to_data_valid,
             n_channel=n_channel,
             checkpoint_path=checkpoint_path,
             lr=lr,
@@ -252,7 +255,7 @@ class Glow1D(nn.Module):
               fp16: bool = False,
               progress_interval: int = 100,
               epoch_valid: int = 100,
-              epoch_save: int = 100000):
+              epoch_save: int = 1000):
         """ Train 1D Glow model
 
         Parameters
@@ -275,26 +278,25 @@ class Glow1D(nn.Module):
             Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
         """
         assert not self.config.is_trained, 'model has already been trained'
-        batch_valid = self.config.batch if batch_valid is None else batch_valid
         writer = SummaryWriter(log_dir=self.config.cache_dir)
 
         logging.debug('setting up optimizer')
         self.__setup_optimizer(fp16=fp16)
 
         logging.debug('loading data iterator')
-        data_train, data_valid = get_dataset(
-            self.config.data, cache_dir=cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
+        data = get_dataset_1d(self.config.path_to_data, cache_dir=cache_dir)
 
         logging.debug('data-dependent initialization')
-        loader = torch.utils.data.DataLoader(
-            data_train, batch_size=self.config.batch_init, shuffle=True)
+        loader = torch.utils.data.DataLoader(data, batch_size=self.config.batch_init, shuffle=True)
         self.__data_dependent_initialization(loader)
 
         logging.info('start model training')
-        loader = torch.utils.data.DataLoader(
-            data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers)
-        loader_valid = torch.utils.data.DataLoader(
-            data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
+        loader = torch.utils.data.DataLoader(data, batch_size=self.config.batch, shuffle=True, num_workers=num_workers)
+        if self.config.path_to_data_valid is not None:
+            data_valid = get_dataset_1d(self.config.path_to_data_valid, cache_dir=cache_dir)
+            loader_valid = torch.utils.data.DataLoader(data_valid, batch_size=batch_valid, num_workers=num_workers)
+        else:
+            loader_valid = None
 
         try:
             with torch.cuda.amp.autocast(enabled=fp16):
@@ -307,7 +309,7 @@ class Glow1D(nn.Module):
                     logging.info('[epoch {}/{}] average nll: {}: lr {}'.format(
                         e, self.config.epoch, round(mean_nll, 3), inst_lr))
 
-                    if e % epoch_valid == 0 and e != 0:
+                    if e % epoch_valid == 0 and e != 0 and loader_valid is not None:
                         logging.debug('running validation')
                         mean_nll = self.__valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
                         logging.info('[epoch {}/{}] average nll: {} (valid)'.format(
@@ -328,9 +330,7 @@ class Glow1D(nn.Module):
     def __data_dependent_initialization(self, data_loader):
         with torch.no_grad():
             loader = iter(data_loader)
-            x, _ = next(loader)
-            x = x.to(self.device)
-            self.model(x, return_loss=False, initialize_actnorm=True)
+            self.model(next(loader).to(self.device), return_loss=False, initialize_actnorm=True)
 
     def __train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval, gradient_checkpointing):
         if gradient_checkpointing:
@@ -342,12 +342,14 @@ class Glow1D(nn.Module):
         total_nll = 0
         data_size = 0
         for i in range(step_in_epoch):
-            x, _ = next(data_loader)
-            x = x.to(self.device)
+            try:
+                x = next(data_loader)
+            except StopIteration:
+                break
             # zero the parameter gradients
             self.optimizer.zero_grad()
             # forward: output prediction and get loss
-            _, nll = self.model(x)
+            _, nll = self.model(x.to(self.device))
             # backward: calculate gradient
             self.scaler.scale(nll.mean()).backward()
 
@@ -376,15 +378,13 @@ class Glow1D(nn.Module):
         total_nll = 0
         data_size = 0
         with torch.no_grad():
-            for x, _ in data_loader:
-                x = x.to(self.device)
-                # forward: output prediction and get loss
-                _, nll = self.model(x)
+            for x in data_loader:
+                _, nll = self.model(x.to(self.device))
                 total_nll += nll.sum().cpu().item()
                 data_size += len(x)
 
         # bits per dimension
-        nll = total_nll / data_size
-        writer.add_scalar('valid/nll', nll, epoch_n)
-        return nll
+        bpd = total_nll / data_size
+        writer.add_scalar('valid/bits_per_dim', bpd, epoch_n)
+        return bpd
 
