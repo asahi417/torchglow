@@ -288,12 +288,11 @@ class Glow(nn.Module):
                 raise NotImplementedError('gradient_checkpointing is not implemented yet')
             else:
                 _, nll = self.model(x)
-            nll = nll.sum()
             # backward: calculate gradient
-            self.scaler.scale(nll).backward()
+            self.scaler.scale(nll.mean()).backward()
 
             # bits per dimension
-            total_nll += nll.cpu().item()
+            total_nll += nll.sum().cpu().item()
             data_size += len(x)
             bpd = total_nll/data_size + log(n_bins) / log(2)
             writer.add_scalar('train/bits_per_dim', bpd, i + epoch_n * step_in_epoch)
