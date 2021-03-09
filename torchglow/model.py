@@ -241,7 +241,7 @@ class Glow(nn.Module):
         try:
             with torch.cuda.amp.autocast(enabled=fp16):
                 for e in range(self.config.epoch):  # loop over the epoch
-
+                    self.scheduler.step()
                     mean_bpd = self.__train_single_epoch(
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer,
                         gradient_checkpointing=gradient_checkpointing)
@@ -258,7 +258,7 @@ class Glow(nn.Module):
                     if e % epoch_save == 0 and e != 0:
                         self.config.save(self.model.state_dict(), epoch=e)
 
-                    self.scheduler.step()
+
 
         except KeyboardInterrupt:
             logging.info('*** KeyboardInterrupt ***')
