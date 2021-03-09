@@ -134,8 +134,10 @@ class Glow(nn.Module):
 
     def __setup_optimizer(self, fp16):
         # optimizer
-        self.optimizer = torch.optim.AdamW(
-            self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
+        self.optimizer = torch.optim.Adamax(
+            self.model.parameters(), lr=self.config.lr)
+        # self.optimizer = torch.optim.AdamW(
+        #     self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
         # scheduler
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
