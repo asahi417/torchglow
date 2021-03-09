@@ -34,6 +34,7 @@ class Glow(nn.Module):
                  decay_lr: bool = False,
                  epoch_warmup: int = 10,
                  weight_decay: float = 0,
+                 optimizer: str = 'adamax',
                  checkpoint_path: str = None):
         """ Main network for Glow
 
@@ -100,6 +101,7 @@ class Glow(nn.Module):
             lu_decomposition=lu_decomposition,
             random_seed=random_seed,
             weight_decay=weight_decay,
+            optimizer=optimizer,
             batch_init=batch_init
         )
         # model
@@ -134,10 +136,18 @@ class Glow(nn.Module):
 
     def __setup_optimizer(self, fp16):
         # optimizer
-        self.optimizer = torch.optim.Adamax(
-            self.model.parameters(), lr=self.config.lr)
-        # self.optimizer = torch.optim.AdamW(
-        #     self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
+        if self.config.optimizer == 'adamax':
+            # assert self.config.weight_decay == 0, ''
+            self.optimizer = torch.optim.Adamax(
+                self.model.parameters(), lr=self.config.lr)
+        elif self.config.optimizer == 'adam':
+            self.optimizer = torch.optim.AdamW(
+                self.model.parameters(), lr=self.config.lr)
+        elif self.config.optimizer == 'adamw':
+            self.optimizer = torch.optim.AdamW(
+                self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
+        else:
+            raise ValueError('unknown optimizer: {}'.format(self.config.optimizer))
         # scheduler
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,

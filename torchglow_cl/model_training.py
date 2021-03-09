@@ -25,6 +25,7 @@ def get_options():
     parser.add_argument('--decay-lr', help='linear decay of learning rate after warmup', action='store_true')
     parser.add_argument("--epoch-warmup", help="warmup epochs", default=10, type=int)
     parser.add_argument("--weight-decay", help="l2 penalty for weight decay", default=0, type=float)
+    parser.add_argument('--optimizer', help='optimizer `adam`/`adamax`/`adamw`', default='adamax', type=str)
     # optimization parameter
     parser.add_argument('--batch-valid', help='batch size for validation', default=64, type=int)
     parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
@@ -64,6 +65,7 @@ def main():
         decay_lr=opt.decay_lr,
         epoch_warmup=opt.epoch_warmup,
         weight_decay=opt.weight_decay,
+        optimizer=opt.optimizer
     )
     trainer.train(
         batch_valid=opt.batch_valid,
