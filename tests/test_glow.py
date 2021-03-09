@@ -22,10 +22,8 @@ class Test(unittest.TestCase):
             data='cifar10',
             image_size=32,
             batch=2,
-            lu_decomposition=False,
-            actnorm_scale=1
         )
-        model.train()
+        model.train(epoch_valid=10)
         ckpt = model.checkpoint_dir
 
         # test reverse mode

@@ -41,23 +41,21 @@ class ActNorm2d(nn.Module):
 
     def __init__(self, num_features, scale: float = 1.):
         super().__init__()
-        self.is_initialized = False
         self.bias = nn.Parameter(torch.zeros(1, num_features, 1, 1))
         self.logs = nn.Parameter(torch.zeros(1, num_features, 1, 1))
         self.num_features = num_features
         self.scale = float(scale)
 
     def initialize_parameters(self, x):
-        if self.training and not self.is_initialized:
-            bias = - mean_tensor(x.clone(), dim=[0, 2, 3], keepdim=True)
-            v = mean_tensor((x.clone() + bias) ** 2, dim=[0, 2, 3], keepdim=True)
-            logs = (self.scale / (v.sqrt() + EPS)).log()
-            self.bias.data.copy_(bias.data)
-            self.logs.data.copy_(logs.data)
-            self.is_initialized = True
+        bias = - mean_tensor(x.clone(), dim=[0, 2, 3], keepdim=True)
+        v = mean_tensor((x.clone() + bias) ** 2, dim=[0, 2, 3], keepdim=True)
+        logs = (self.scale / (v.sqrt() + EPS)).log()
+        self.bias.data.copy_(bias.data)
+        self.logs.data.copy_(logs.data)
 
-    def forward(self, x, log_det=None, reverse: bool = False):
-        self.initialize_parameters(x)
+    def forward(self, x, log_det=None, reverse: bool = False, initialize: bool = False):
+        if initialize:
+            self.initialize_parameters(x)
         self._check_input_dim(x)
 
         if reverse:  # scale and center
@@ -226,22 +224,15 @@ class FlowStep(nn.Module):
         self.invconv = InvertibleConv2d(in_channels, lu_decomposition)
         self.coupling = AffineCoupling(in_channels, filter_size=filter_size)
 
-    def forward(self, x, log_det=None, reverse: bool = False):
+    def forward(self, x, log_det=None, reverse: bool = False, initialize_actnorm: bool = False):
         if reverse:
             x, log_det = self.coupling(x, log_det, reverse=True)
             x, log_det = self.invconv(x, log_det, reverse=True)
             x, log_det = self.actnorm(x, log_det, reverse=True)
         else:
-            # print()
-            # print(x.shape)
-            # print(x.min(), x.max())
-            x, log_det = self.actnorm(x, log_det)
-            # print(x.min(), x.max())
+            x, log_det = self.actnorm(x, log_det, initialize=initialize_actnorm)
             x, log_det = self.invconv(x, log_det)
-            # print(x.min(), x.max())
             x, log_det = self.coupling(x, log_det)
-            # print(x.min(), x.max())
-            # print(x.shape)
         return x, log_det
 
 
@@ -362,9 +353,6 @@ class GlowNetwork(nn.Module):
            + --------------------------+
     """
 
-    # def __len__(self):
-    #     return len(self._modules)
-
     def __init__(self,
                  image_shape: List,
                  filter_size: int = 512,
@@ -418,6 +406,7 @@ class GlowNetwork(nn.Module):
 
     def forward(self,
                 x: torch.Tensor = None,
+                initialize_actnorm: bool = False,
                 sample_size: int = 1,
                 return_loss: bool = True,
                 reverse: bool = False,
@@ -477,7 +466,9 @@ class GlowNetwork(nn.Module):
 
             latent_states = []
             for layer in self.layers:
-                if isinstance(layer, Split):
+                if isinstance(layer, FlowStep):
+                    x, log_det = layer(x, log_det=log_det, initialize_actnorm=initialize_actnorm)
+                elif isinstance(layer, Split):
                     (x, z), log_det = layer(x, log_det=log_det)
                     latent_states.append(z)
                 else:
