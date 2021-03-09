@@ -179,7 +179,7 @@ class AffineCoupling(nn.Module):
         super().__init__()
 
         # affine sub-network: take the half of the input channel and produce feature sized full channel
-        kernel_size_mid = 1
+        kernel_size_mid = 1  # bottle neck layer
         self.net = nn.Sequential(
             nn.Conv2d(int(in_channels / 2), filter_size, kernel_size, stride,
                       padding=tuple([((kernel_size - 1) * stride + 1) // 2] * 2)),
@@ -216,13 +216,16 @@ class FlowStep(nn.Module):
     def __init__(self,
                  in_channels: int,
                  filter_size: int = 512,
+                 kernel_size: int = 3,
+                 stride: int = 1,
                  actnorm_scale: float = 1.0,
                  lu_decomposition: bool = False):
         super().__init__()
 
         self.actnorm = ActNorm2d(in_channels, actnorm_scale)
         self.invconv = InvertibleConv2d(in_channels, lu_decomposition)
-        self.coupling = AffineCoupling(in_channels, filter_size=filter_size)
+        self.coupling = AffineCoupling(
+            in_channels, filter_size=filter_size, kernel_size=kernel_size, stride=stride)
 
     def forward(self, x, log_det=None, reverse: bool = False, initialize_actnorm: bool = False):
         if reverse:
@@ -356,6 +359,8 @@ class GlowNetwork(nn.Module):
     def __init__(self,
                  image_shape: List,
                  filter_size: int = 512,
+                 kernel_size: int = 3,
+                 stride: int = 1,
                  n_flow_step: int = 32,
                  n_level: int = 3,
                  actnorm_scale: float = 1.0,
@@ -381,7 +386,8 @@ class GlowNetwork(nn.Module):
         self.layers = nn.ModuleList()
         self.n_flow_step = n_flow_step
         self.n_level = n_level
-        flow_config = {'filter_size': filter_size, 'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition}
+        flow_config = {'filter_size': filter_size, 'kernel_size': kernel_size, 'stride': stride,
+                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition}
         h, w, c = image_shape
         self.pixel_size = h * w * c
         assert c in [1, 3], "image_shape should be HWC, like (64, 64, 3): {}".format(image_shape)

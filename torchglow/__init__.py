@@ -1,2 +1,2 @@
 from .data import get_dataset
-from .model import Glow
+from .glow.model import Glow

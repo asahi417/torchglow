@@ -4,12 +4,11 @@ from math import log
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.checkpoint import checkpoint_sequential
 
 from .module import GlowNetwork
-from .config import Config
-from .data import get_dataset, get_decoder
-from .util import fix_seed, get_linear_schedule_with_warmup
+from ..config import Config
+from ..data import get_dataset, get_decoder
+from ..util import fix_seed, get_linear_schedule_with_warmup
 
 
 class Glow(nn.Module):

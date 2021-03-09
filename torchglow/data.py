@@ -148,7 +148,6 @@ def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size:
         Iterator of validation set for torch.utils.data.DataLoader.
     """
     cache_dir = CACHE_DIR if cache_dir is None else cache_dir
-    n_bins = 2 ** n_bits_x
 
     t_valid = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1])])
 
@@ -163,7 +162,7 @@ def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size:
     if data == 'cifar10':
         assert n_bits_x == 8, 'cifar10 does not support n_bits_x != 8'
 
-        # t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
+        t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
         t_train = transforms.Compose(t_train)
 
         train_set = torchvision.datasets.CIFAR10(root=cache_dir, train=True, download=True, transform=t_train)
@@ -201,3 +200,52 @@ def get_decoder(n_bits_x: int = 8):
         return [single_img(_v) for _v in v]
 
     return convert_tensor_to_img
+
+
+# class DatasetFile(torch.utils.data.Dataset):
+#     """ CelebA data iterator """
+#
+#     def __init__(self,
+#                  tfrecord_dir: str,
+#                  root: str,
+#                  train: bool,
+#                  transform,
+#                  n_bits_x: int = 5,
+#                  data: str = 'celeba'):
+#         self.root = root
+#         self.train = train
+#         self.transform = transform
+#         self.n_bits_x = n_bits_x
+#
+#         # download celeba tfrecord files
+#         if not os.path.exists(tfrecord_dir):
+#             open_compressed_file(URLS[data], root)
+#         self.tfr_files = sorted(glob('{}/*.tfrecords'.format(tfrecord_dir)))
+#
+#         # create unique index
+#         create_index(tfrecord_dir)
+#
+#         # create global index, id: (tfrecord file, index in the tfr file)
+#         self.data_index = {}
+#         n = 0
+#         for i in self.tfr_files:
+#             with open(i.replace('tfrecords', 'index'), 'r') as f:
+#                 data_size = len(list(filter(len, f.read().split('\n'))))
+#             for i_ in range(data_size):
+#                 self.data_index[n] = (i, i_)
+#                 n += 1
+#
+#     def __len__(self):
+#         return len(self.data_index)
+#
+#     def __getitem__(self, idx):
+#         tfr_file, n = self.data_index[idx]
+#         # load tfrecord
+#         dataset = TFRecordDataset(tfr_file, tfr_file.replace('tfrecords', 'index'))
+#         single_data = list(dataset)[n]
+#         img = single_data['data'].reshape(single_data['shape']).astype('float32')
+#         # normalize image to [0, 1]
+#         img = (img / 2 ** (8 - self.n_bits_x)).round() / (2. ** self.n_bits_x)
+#         # apply transformation
+#         img = self.transform(img)
+#         return img, single_data['label'][0]
