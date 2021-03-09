@@ -241,7 +241,8 @@ class Glow(nn.Module):
         try:
             with torch.cuda.amp.autocast(enabled=fp16):
                 for e in range(self.config.epoch):  # loop over the epoch
-                    self.scheduler.step()
+                    # self.optimizer.step()
+                    # self.scheduler.step()
                     mean_bpd = self.__train_single_epoch(
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer,
                         gradient_checkpointing=gradient_checkpointing)
