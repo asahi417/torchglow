@@ -281,17 +281,14 @@ class Glow(nn.Module):
         for i in range(step_in_epoch):
             x, _ = next(data_loader)
             x = x.to(self.device)
-
+            # zero the parameter gradients
+            self.optimizer.zero_grad()
             # forward: output prediction and get loss
             if gradient_checkpointing:
                 raise NotImplementedError('gradient_checkpointing is not implemented yet')
             else:
                 _, nll = self.model(x)
             nll = nll.sum()
-
-            # zero the parameter gradients
-            self.optimizer.zero_grad()
-
             # backward: calculate gradient
             self.scaler.scale(nll).backward()
 
