@@ -19,6 +19,7 @@ class Config:
             assert os.path.exists(checkpoint_path), checkpoint_path
             self.config = self.safe_open('{}/config.json'.format(checkpoint_path))
             self.cache_dir = checkpoint_path
+            self.epoch_elapsed = self.safe_open('{}/config_train.json'.format(checkpoint_path))['epoch_elapsed']
         else:
             assert export_dir, 'either `export_dir` or `checkpoint_path` is required'
             self.config = kwargs
@@ -31,6 +32,7 @@ class Config:
             self.cache_dir = '{}/{}'.format(export_dir, self.get_random_string(
                 [os.path.basename(i.replace('/config.json', '')) for i in ex_configs.keys()]
             ))
+            self.epoch_elapsed = 0
         self.__dict__.update(self.config)
         self.model_weight_path = '{}/model.pt'.format(self.cache_dir)
 
@@ -45,13 +47,15 @@ class Config:
             with open('{}/config.json'.format(self.cache_dir), 'w') as f:
                 json.dump(self.config, f)
 
-    def save(self, model_state_dict, epoch: int = None):
+    def save(self, model_state_dict, epoch: int, last_model: bool = False):
         self.__cache_init()
         logging.info('saving model weight in {}'.format(self.cache_dir))
-        if epoch:
-            torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
-        else:
+        if last_model:
+            with open('{}/config_train.json'.format(self.cache_dir), 'w') as f:
+                json.dump({'epoch_elapsed': epoch + 1}, f)
             torch.save(model_state_dict, '{}/model.pt'.format(self.cache_dir))
+        else:
+            torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
 
     @staticmethod
     def get_random_string(exclude: List = None, length: int = 6):

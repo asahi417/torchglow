@@ -7,7 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from .module import GlowNetwork
 from ..config import Config
-from ..data import get_dataset, get_decoder
+from ..data.data import get_dataset, get_decoder
 from ..util import fix_seed, get_linear_schedule_with_warmup
 
 
@@ -216,6 +216,7 @@ class Glow(nn.Module):
             Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
         """
         assert not self.config.is_trained, 'model has already been trained'
+        assert self.config.epoch_elapsed >= self.config.epoch, 'training was finished'
         batch_valid = self.config.batch if batch_valid is None else batch_valid
         writer = SummaryWriter(log_dir=self.config.cache_dir)
 
@@ -239,7 +240,7 @@ class Glow(nn.Module):
 
         try:
             with torch.cuda.amp.autocast(enabled=fp16):
-                for e in range(self.config.epoch):  # loop over the epoch
+                for e in range(self.config.epoch_elapsed, self.config.epoch):  # loop over the epoch
 
                     mean_bpd = self.__train_single_epoch(
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer,
@@ -263,7 +264,7 @@ class Glow(nn.Module):
             logging.info('*** KeyboardInterrupt ***')
 
         writer.close()
-        self.config.save(self.model.state_dict())
+        self.config.save(self.model.state_dict(), epoch=e, last_model=True)
         logging.info('complete training: model ckpt was saved at {}'.format(self.config.cache_dir))
 
     def __data_dependent_initialization(self, data_loader):

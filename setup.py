@@ -35,7 +35,8 @@ setup(
         "requests",
         "tfrecord",
         "tensorboard",
-        "gdown"
+        "gdown",
+        "gensim"
     ],
     python_requires='>=3.6',
     entry_points={

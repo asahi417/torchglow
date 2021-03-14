@@ -36,6 +36,8 @@ def get_options():
     parser.add_argument('--progress-interval', help='log interval during training', default=100, type=int)
     parser.add_argument('--epoch-valid', help='interval to run validation', default=10, type=int)
     parser.add_argument('--epoch-save', help='interval to save model weight', default=1000, type=int)
+    # load existing checkpoint
+    parser.add_argument('--checkpoint-path', help='train existing checkpoint', default=None, type=str)
     # misc
     parser.add_argument('--debug', help='log level', action='store_true')
     return parser.parse_args()
@@ -67,7 +69,8 @@ def main():
         epoch_warmup=opt.epoch_warmup,
         weight_decay=opt.weight_decay,
         optimizer=opt.optimizer,
-        momentum=opt.momentum
+        momentum=opt.momentum,
+        checkpoint_path=opt.checkpoint_path
     )
     trainer.train(
         batch_valid=opt.batch_valid,
