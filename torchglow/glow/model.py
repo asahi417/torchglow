@@ -226,11 +226,11 @@ class Glow(nn.Module):
         logging.debug('loading data iterator')
         data_train, data_valid = get_dataset(
             self.config.data, cache_dir=cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
-
-        logging.debug('data-dependent initialization')
-        loader = torch.utils.data.DataLoader(
-            data_train, batch_size=self.config.batch_init, shuffle=True)
-        self.__data_dependent_initialization(loader)
+        if self.config.epoch_elapsed == 0:
+            logging.debug('data-dependent initialization')
+            loader = torch.utils.data.DataLoader(
+                data_train, batch_size=self.config.batch_init, shuffle=True)
+            self.__data_dependent_initialization(loader)
 
         logging.info('start model training')
         loader = torch.utils.data.DataLoader(
