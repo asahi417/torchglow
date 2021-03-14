@@ -38,7 +38,7 @@ class Config:
 
     @property
     def is_trained(self):
-        return os.path.exists(self.model_weight_path)
+        return os.path.exists(self.model_weight_path) and
 
     def __cache_init(self):
         assert not self.is_trained, 'model has already been trained'
