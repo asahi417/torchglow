@@ -138,7 +138,6 @@ class Glow(nn.Module):
     def __setup_optimizer(self, fp16):
         # optimizer
         if self.config.optimizer == 'adamax':
-            # assert self.config.weight_decay == 0, ''
             self.optimizer = torch.optim.Adamax(
                 self.model.parameters(), lr=self.config.lr)
         elif self.config.optimizer == 'adam':
@@ -157,6 +156,12 @@ class Glow(nn.Module):
             self.optimizer,
             num_warmup_steps=self.config.epoch_warmup,
             num_training_steps=self.config.epoch if self.config.decay_lr else None)
+        # load from exsiting config
+        if self.config.is_trained:
+            optimizer_stat = torch.load(self.config.optimizer_path, map_location='cpu')  # allocate stats on cpu
+            self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
+            self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
+
         # GPU mixture precision
         self.scaler = torch.cuda.amp.GradScaler(enabled=fp16)
         # multi-gpus
@@ -189,7 +194,6 @@ class Glow(nn.Module):
               batch_valid: int = 32,
               cache_dir: str = None,
               num_workers: int = 0,
-              gradient_checkpointing: bool = False,
               fp16: bool = False,
               progress_interval: int = 100,
               epoch_valid: int = 100,
@@ -204,8 +208,6 @@ class Glow(nn.Module):
             Directory for cache the datasets.
         num_workers : int
             Workers for DataLoader.
-        gradient_checkpointing : bool
-            Gradient checkpointing to save memory.
         fp16 : bool
             Mixed precision to save memory.
         progress_interval : int
@@ -243,8 +245,7 @@ class Glow(nn.Module):
                 for e in range(self.config.epoch_elapsed, self.config.epoch):  # loop over the epoch
 
                     mean_bpd = self.__train_single_epoch(
-                        loader, epoch_n=e, progress_interval=progress_interval, writer=writer,
-                        gradient_checkpointing=gradient_checkpointing)
+                        loader, epoch_n=e, progress_interval=progress_interval, writer=writer)
                     inst_lr = self.optimizer.param_groups[0]['lr']
                     logging.info('[epoch {}/{}] average bpd: {}: lr {}'.format(
                         e, self.config.epoch, round(mean_bpd, 3), inst_lr))
@@ -264,7 +265,12 @@ class Glow(nn.Module):
             logging.info('*** KeyboardInterrupt ***')
 
         writer.close()
-        self.config.save(self.model.state_dict(), epoch=e, last_model=True)
+        self.config.save(
+            self.model.state_dict(),
+            optimizer_state_dict=self.optimizer.state_dict(),
+            scheduler_state_dict=self.scheduler.state_dict(),
+            epoch=e,
+            last_model=True)
         logging.info('complete training: model ckpt was saved at {}'.format(self.config.cache_dir))
 
     def __data_dependent_initialization(self, data_loader):
@@ -274,10 +280,7 @@ class Glow(nn.Module):
             x = x.to(self.device)
             self.model(x, return_loss=False, initialize_actnorm=True)
 
-    def __train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval, gradient_checkpointing):
-        if gradient_checkpointing:
-            raise NotImplementedError('gradient_checkpointing is not implemented yet')
-
+    def __train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
         self.model.train()
         n_bins = 2 ** self.config.n_bits_x
         step_in_epoch = int(round(self.config.training_step / self.config.batch))

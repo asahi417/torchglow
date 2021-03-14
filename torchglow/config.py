@@ -35,6 +35,7 @@ class Config:
             self.epoch_elapsed = 0
         self.__dict__.update(self.config)
         self.model_weight_path = '{}/model.pt'.format(self.cache_dir)
+        self.optimizer_path = '{}/optimizer.pt'.format(self.cache_dir)
 
     @property
     def is_trained(self):
@@ -51,13 +52,23 @@ class Config:
             with open('{}/config.json'.format(self.cache_dir), 'w') as f:
                 json.dump(self.config, f)
 
-    def save(self, model_state_dict, epoch: int, last_model: bool = False):
+    def save(self,
+             model_state_dict,
+             epoch: int,
+             optimizer_state_dict=None,
+             scheduler_state_dict=None,
+             last_model: bool = False):
         self.__cache_init()
         logging.info('saving model weight in {}'.format(self.cache_dir))
         if last_model:
             with open('{}/config_train.json'.format(self.cache_dir), 'w') as f:
                 json.dump({'epoch_elapsed': epoch + 1}, f)
-            torch.save(model_state_dict, '{}/model.pt'.format(self.cache_dir))
+            torch.save(model_state_dict, self.model_weight_path)
+            if optimizer_state_dict and scheduler_state_dict:
+                torch.save({
+                    'optimizer_state_dict': optimizer_state_dict,
+                    'scheduler_state_dict': scheduler_state_dict
+                }, self.optimizer_path)
         else:
             torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
 
