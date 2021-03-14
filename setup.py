@@ -34,7 +34,8 @@ setup(
         "keras",
         "requests",
         "tfrecord",
-        "tensorboard"
+        "tensorboard",
+        "gdown"
     ],
     python_requires='>=3.6',
     entry_points={

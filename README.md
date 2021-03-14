@@ -3,3 +3,7 @@ Pytorch implementation of [Glow](https://d4mucfpksywv.cloudfront.net/research-co
 
 
 ## Setup
+```
+pip install git+https://github.com/asahi417/torchglow 
+```
+

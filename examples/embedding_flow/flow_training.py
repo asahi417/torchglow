@@ -4,108 +4,18 @@ from typing import List
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
-from .module import FlowStep, Split
+
+import torchglow
+
+torchglow.glow.GlowNetwork1D
+
 from ..util import fix_seed, get_linear_schedule_with_warmup
 from ..config import Config
-from torchglow.data.data_1d import get_dataset_1d
+from ..data_1d import get_dataset_1d
 
 
-class GlowNetwork1D(nn.Module):
-    """ Glow network architecture for 1d input """
-
-    def __init__(self,
-                 n_channel: int,
-                 filter_size: int = 512,
-                 n_flow_step: int = 10,
-                 actnorm_scale: float = 1.0,
-                 lu_decomposition: bool = False):
-        """ Glow network architecture
-
-        Parameters
-        ----------
-        n_channel: List
-            Input channel size.
-        filter_size : int
-            Filter size for CNN layer.
-        n_flow_step : int
-            Number of flow block.
-        actnorm_scale : float
-            Factor to scale ActNorm.
-        lu_decomposition : bool
-            Whether use LU decomposition in invertible CNN layer.
-        """
-        super().__init__()
-        self.layers = nn.ModuleList()
-        self.n_flow_step = n_flow_step
-        flow_config = {'filter_size': filter_size, 'kernel_size': 1, 'stride': 1,
-                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition}
-        self.n_channel = n_channel
-        for _ in range(self.n_flow_step):
-            self.layers.append(FlowStep(in_channels=self.n_channel, **flow_config))
-        self.layers.append(Split(in_channels=self.n_channel, split=False))
-        self.last_latent_shape = [self.n_channel, 1, 1]
-
-    def forward(self,
-                x: torch.Tensor = None,
-                initialize_actnorm: bool = False,
-                sample_size: int = 1,
-                return_loss: bool = True,
-                reverse: bool = False,
-                latent_states: List = None,
-                eps_std: float = None):
-        """ Glow forward inference/reverse sampling module.
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor, which can be left as None to generate random sample from learnt posterior
-            for reverse mode.
-        reverse : bool
-            Switch to reverse mode to sample data from latent variable.
-        latent_states: List
-            Latent variable to generate data, which is None as default for random sampling, otherwise
-            generate data conditioned by the given latent variable. This should be the output from the forward
-            inference.
-        sample_size : int
-            Sampling size for random generation in reverse mode.
-        return_loss : bool
-            Switch to not computing log-det mode (should be True in non-training usecases).
-        eps_std : bool
-            Factor to scale sampling distribution.
-
-        Returns
-        -------
-        output :
-            (forward mode) List containing latent variables of x
-            (reverse mode) torch.Tensor of the generated data
-        nll : negative log likelihood
-        """
-        if reverse:
-            if x is None:
-                # seed variables for sampling data
-                x = torch.zeros([sample_size] + self.last_latent_shape)
-
-            for layer in reversed(self.layers):
-                if isinstance(layer, Split):
-                    x, _ = layer(x, reverse=True, eps_std=eps_std, z=latent_states)
-                else:
-                    x, _ = layer(x, reverse=True)
-            return x, None
-        else:
-            assert x is not None, '`x` have to be a tensor, not None'
-            log_det = 0 if return_loss else None
-            for layer in self.layers:
-                if isinstance(layer, FlowStep):
-                    x, log_det = layer(x, log_det=log_det, initialize_actnorm=initialize_actnorm)
-                else:
-                    x, log_det = layer(x, log_det=log_det)
-            (_, z) = x
-            nll = None if log_det is None else - log_det
-            return z, nll
-
-
-class Glow1D(nn.Module):
-    """ Main network for 1D Glow """
+class EmbeddingGlow(nn.Module):
+    """ Glow on embedding model """
 
     def __init__(self,
                  path_to_data: str,
@@ -128,41 +38,6 @@ class Glow1D(nn.Module):
                  optimizer: str = 'adamax',
                  momentum: float = 0.9,
                  checkpoint_path: str = None):
-        """ Main network for Glow
-
-        Parameters
-        ----------
-        training_step : int
-            Training step in single epoch.
-        epoch : int
-            Number of epochs.
-        export_dir : str
-            Directory to ecxport model weight file.
-        batch : int
-            The size of batch.
-        lr : float
-            Learning rate.
-        batch_init : int
-            The number of batch for data-dependent initialization.
-        filter_size : int
-            CNN filter size.
-        n_flow_step : int
-            The number of flow.
-        actnorm_scale : float
-            Factor to scale ActNorm layer.
-        lu_decomposition : bool
-            LU decomposed invertible CNN
-        random_seed : int
-            Random seed.
-        decay_lr : bool
-            Linear decay of learning rate after warmup.
-        epoch_warmup : int
-            Epochs to linearly warmup learning rate.
-        weight_decay : float
-            Penalty for l2 weight decay.
-        checkpoint_path : str
-            Path to checkpoint to load trained weight.
-        """
         super().__init__()
         fix_seed(random_seed)
         # config
