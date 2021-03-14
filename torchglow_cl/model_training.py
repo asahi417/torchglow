@@ -31,7 +31,6 @@ def get_options():
     parser.add_argument('--batch-valid', help='batch size for validation', default=64, type=int)
     parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
     parser.add_argument('--num-workers', help='workers for dataloder', default=0, type=int)
-    parser.add_argument('--gradient-checkpoint', help='gradient checkpoint for training', action='store_true')
     parser.add_argument('--fp16', help='fp16 for training', action='store_true')
     parser.add_argument('--progress-interval', help='log interval during training', default=100, type=int)
     parser.add_argument('--epoch-valid', help='interval to run validation', default=10, type=int)
@@ -76,7 +75,6 @@ def main():
         batch_valid=opt.batch_valid,
         cache_dir=opt.cache_dir,
         num_workers=opt.num_workers,
-        gradient_checkpointing=opt.gradient_checkpoint,
         fp16=opt.fp16,
         progress_interval=opt.progress_interval,
         epoch_valid=opt.epoch_valid,
