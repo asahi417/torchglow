@@ -216,7 +216,7 @@ class Glow(nn.Module):
             Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
         """
         # assert not self.config.is_trained, 'model has already been trained'
-        assert self.config.epoch_elapsed >= self.config.epoch, 'training was finished'
+        assert self.config.is_fully_trained, 'model was fully trained over all epochs'
         batch_valid = self.config.batch if batch_valid is None else batch_valid
         writer = SummaryWriter(log_dir=self.config.cache_dir)
 
