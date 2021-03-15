@@ -45,11 +45,13 @@ class Test(unittest.TestCase):
         )
         model.train(epoch_valid=10)
         x, y = model.reconstruct(10)
+        p = 3
         for n, (_x, _y) in enumerate(zip(x, y)):
-            print(_x)
-            print(_y)
-            input()
-            # assert _x == _y
+            # reduce precision
+            assert all(round(a[0][0], p) == round(b[0][0], p) for a, b in zip(_x, _y))
+
+        z = model.embed(['paris__france', 'vienna__austria'])
+        print(z)
 
 
 if __name__ == "__main__":

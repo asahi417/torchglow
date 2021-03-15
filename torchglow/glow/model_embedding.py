@@ -1,11 +1,12 @@
 """ Glow on 1D Word Embeddings """
 import logging
+from typing import Dict, List
 import torch
 
 from .model_base import GlowBase
 from .module import GlowNetwork1D
 from ..config import Config
-from ..data.data_word_embedding import get_dataset_word_embedding, N_DIM
+from ..data.data_word_embedding import get_dataset_word_embedding, get_iterator_word_embedding, N_DIM
 from ..util import fix_seed
 
 __all__ = 'GlowWordEmbedding'
@@ -33,7 +34,8 @@ class GlowWordEmbedding(GlowBase):
                  weight_decay: float = 0,
                  optimizer: str = 'adamax',
                  momentum: float = 0.9,
-                 checkpoint_path: str = None):
+                 checkpoint_path: str = None,
+                 checkpoint_option: Dict = None):
         """ Glow on 1D Word Embeddings
 
         Parameters
@@ -111,7 +113,11 @@ class GlowWordEmbedding(GlowBase):
 
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
-            self.model.load_state_dict(torch.load(self.config.model_weight_path))
+            if not checkpoint_option:
+                model_weight_path = self.config.model_weight_path
+            else:
+                model_weight_path = self.config.model_weight_path_inter[checkpoint_option['epoch']]
+            self.model.load_state_dict(torch.load(model_weight_path))
 
         # model on gpu
         self.model.to(self.device)
@@ -119,7 +125,9 @@ class GlowWordEmbedding(GlowBase):
 
         self.checkpoint_dir = self.config.cache_dir
 
-    def setup_data(self, cache_dir):
+    def setup_data(self, cache_dir, return_iterator: bool = False):
+        if return_iterator:
+            return get_iterator_word_embedding(self.config.model_type, cache_dir=cache_dir)
         return get_dataset_word_embedding(
             self.config.model_type, validation_rate=self.config.validation_rate, cache_dir=cache_dir)
 
@@ -142,14 +150,14 @@ class GlowWordEmbedding(GlowBase):
             self.scaler.scale(nll.mean()).backward()
 
             inst_nll = nll.mean().cpu().item()
-            writer.add_scalar('train/nll', inst_nll, i + epoch_n * step_in_epoch)
+            writer.add_scalar('train/bpd', inst_nll, i + epoch_n * step_in_epoch)
 
             # update optimizer
             inst_lr = self.optimizer.param_groups[0]['lr']
             writer.add_scalar('train/learning_rate', inst_lr, i + epoch_n * step_in_epoch)
 
             if i % progress_interval == 0:
-                logging.debug('[epoch {}/{}] (step {}/{}) instant nll: {}: lr: {}'.format(
+                logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
                     epoch_n, self.config.epoch, i, step_in_epoch, round(inst_nll, 3), inst_lr))
 
             # aggregate average nll over epoch
@@ -173,12 +181,13 @@ class GlowWordEmbedding(GlowBase):
 
         # bits per dimension
         bpd = total_nll / data_size
-        writer.add_scalar('valid/nll', bpd, epoch_n)
+        writer.add_scalar('valid/bpd', bpd, epoch_n)
         return bpd
 
     def reconstruct(self, sample_size: int = 5, cache_dir: str = None, batch: int = 5):
         """ Reconstruct validation embedding by Glow """
         assert self.config.is_trained, 'model is not trained'
+        self.model.eval()
         _, data_valid = self.setup_data(cache_dir)
         loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
         embedding_original = []
@@ -193,3 +202,33 @@ class GlowWordEmbedding(GlowBase):
                 if len(embedding_reconstruct) > sample_size:
                     break
         return embedding_original[:sample_size], embedding_reconstruct[:sample_size]
+
+    def embed(self, data: List, batch: int = None, cache_dir: str = None):
+        """ Embed data into latent space with Glow.
+
+        Parameters
+        ----------
+        data : list
+            A list of words to get the embeddings.
+        batch : int
+            Batch size.
+        cache_dir : str
+            Directory for cache the datasets.
+
+        Returns
+        -------
+        A list of 1-dim embedding from the given data, in which the n_dim depends on underlying embedding model.
+        """
+        assert self.config.is_trained, 'model is not trained'
+        self.model.eval()
+        data_iterator = self.setup_data(cache_dir, return_iterator=True)
+        batch = batch if batch is not None else self.config.batch
+        loader = torch.utils.data.DataLoader(data_iterator(data), batch_size=batch)
+        latent_variable = []
+        with torch.no_grad():
+            for data in loader:
+                z, _ = self.model(data[0].to(self.device), return_loss=False)
+                # reshape from CHW -> W
+                z = z.reshape(-1, N_DIM[self.config.model_type])
+                latent_variable += z.cpu().tolist()
+        return latent_variable

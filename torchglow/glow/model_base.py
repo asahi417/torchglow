@@ -35,7 +35,7 @@ class GlowBase(nn.Module):
         ----------
         batch_valid : int
             The size of batch for validation.
-        cache_dir : int
+        cache_dir : str
             Directory for cache the datasets.
         num_workers : int
             Workers for DataLoader.

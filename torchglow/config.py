@@ -35,6 +35,8 @@ class Config:
             self.epoch_elapsed = 0
         self.__dict__.update(self.config)
         self.model_weight_path = '{}/model.pt'.format(self.cache_dir)
+        self.model_weight_path_inter = {k.split('model.')[-1].replace('.pt', ''): k
+                                        for k in glob('{}/model.*.pt'.format(self.cache_dir))}
         self.optimizer_path = '{}/optimizer.pt'.format(self.cache_dir)
 
     @property
