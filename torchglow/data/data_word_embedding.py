@@ -21,8 +21,6 @@ N_DIM = {
 __all__ = ('get_dataset_word_embedding', 'N_DIM')
 
 
-
-
 def get_dataset_word_embedding(model_type: str, cache_dir: str = None, validation_rate: float = 0.2):
     cache_dir = cache_dir if cache_dir is not None else CACHE_DIR
     url = URL_MODEL[model_type]

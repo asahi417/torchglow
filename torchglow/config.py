@@ -43,10 +43,9 @@ class Config:
 
     @property
     def is_fully_trained(self):
-        return self.epoch_elapsed >= self.epoch
+        return self.epoch_elapsed >= self.conofig.epoch
 
     def __cache_init(self):
-        assert not self.is_trained, 'model has already been trained'
         if not os.path.exists('{}/config.json'.format(self.cache_dir)):
             os.makedirs(self.cache_dir, exist_ok=True)
             with open('{}/config.json'.format(self.cache_dir), 'w') as f:
