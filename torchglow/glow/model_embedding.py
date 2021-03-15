@@ -109,7 +109,11 @@ class GlowWordEmbedding(GlowBase):
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        logging.info('1D Glow model: {}M parameters'.format(round(model_size/10**6)))
+        # for p in self.model.parameters():
+        #     if p.requires_grad:
+        #         print(p.numel(), p.shape)
+        # input(model_size)
+        logging.info('1D Glow model: {}M parameters'.format(round(model_size/10**6, 4)))
 
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))

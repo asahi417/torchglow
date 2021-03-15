@@ -273,14 +273,14 @@ class Split(nn.Module):
     """
     log2pi = float(np.log(2 * np.pi))
 
-    def __init__(self, in_channels, split: bool = True):
+    def __init__(self, in_channels, split: bool = True, kernel_size: int = 3, stride: int = 1):
         super().__init__()
         self.split = split
         if self.split:
             assert in_channels % 2 == 0, in_channels
-            self.conv = ZeroConv2d(in_channels // 2, in_channels)
+            self.conv = ZeroConv2d(in_channels // 2, in_channels, kernel_size=kernel_size, stride=stride)
         else:
-            self.conv = ZeroConv2d(in_channels, in_channels * 2)
+            self.conv = ZeroConv2d(in_channels, in_channels * 2, kernel_size=kernel_size, stride=stride)
 
     def forward(self, x, z=None, log_det=None, reverse: bool = False, eps_std: float = None):
         """ Splitting forward inference/reverse sampling module.
@@ -519,7 +519,7 @@ class GlowNetwork1D(nn.Module):
         self.n_channel = n_channel
         for _ in range(self.n_flow_step):
             self.layers.append(FlowStep(in_channels=self.n_channel, **flow_config))
-        self.layers.append(Split(in_channels=self.n_channel, split=False))
+        self.layers.append(Split(in_channels=self.n_channel, split=False, stride=1, kernel_size=1))
         self.last_latent_shape = [self.n_channel, 1, 1]
 
     def forward(self,

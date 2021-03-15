@@ -77,7 +77,7 @@ class GlowBase(nn.Module):
                     mean_bpd = self.train_single_epoch(
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer)
                     inst_lr = self.optimizer.param_groups[0]['lr']
-                    logging.info('[epoch {}/{}] average bpd: {}: lr {}'.format(
+                    logging.info('[epoch {}/{}] average bpd: {}, lr: {}'.format(
                         e, self.config.epoch, round(mean_bpd, 3), inst_lr))
 
                     if e % epoch_valid == 0 and e != 0:

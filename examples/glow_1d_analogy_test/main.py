@@ -11,20 +11,6 @@ import torchglow
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 
-# Anchor word embedding model
-URL_WORD_EMBEDDING = 'https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M-subword.zip'
-PATH_WORD_EMBEDDING = './cache/crawl-300d-2M-subword.bin'
-if not os.path.exists(PATH_WORD_EMBEDDING):
-    logging.info('downloading fasttext model')
-    torchglow.util.open_compressed_file(url=URL_WORD_EMBEDDING, cache_dir='./cache')
-
-# Relative embedding
-URL_RELATIVE_EMBEDDING = 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/relative_init_vectors.bin.tar.gz'
-PATH_RELATIVE_EMBEDDING = './cache/relative_init_vectors.bin'
-if not os.path.exists(PATH_WORD_EMBEDDING):
-    logging.info('downloading relative model')
-    torchglow.util.open_compressed_file(url=URL_RELATIVE_EMBEDDING, cache_dir='./cache')
-
 # Analogy data
 DATA = ['sat', 'u2', 'u4', 'google', 'bats']
 
@@ -35,7 +21,7 @@ def get_dataset_raw(data_name: str):
     root_url_analogy = 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0'
     assert data_name in DATA, 'unknown data: {}'.format(data_name)
     if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
-        open_compressed_file('{}/{}.zip'.format(root_url_analogy, data_name), cache_dir)
+        torchglow.util.open_compressed_file('{}/{}.zip'.format(root_url_analogy, data_name), cache_dir)
     with open('{}/{}/test.jsonl'.format(cache_dir, data_name), 'r') as f:
         test_set = list(filter(None, map(lambda x: json.loads(x) if len(x) > 0 else None, f.read().split('\n'))))
     with open('{}/{}/valid.jsonl'.format(cache_dir, data_name), 'r') as f:
@@ -89,7 +75,7 @@ def get_prediction(stem, choice, embedding_model, relative: bool = False):
     return pred
 
 
-def test_analogy(is_relative, reference_prediction=None):
+def test_analogy(reference_prediction=None):
     if is_relative:
         word_embedding_model = KeyedVectors.load_word2vec_format(PATH_RELATIVE_EMBEDDING, binary=True)
         model_name = 'relative'
@@ -140,8 +126,6 @@ if __name__ == '__main__':
         model = torchglow.GlowWordEmbedding(checkpoint_path=opt.checkpoint_path, checkpoint_option={'epoch': opt.epoch})
     else:
         model = torchglow.GlowWordEmbedding(checkpoint_path=opt.checkpoint_path)
-
-
 
     results_fasttext, p_fasttext = test_analogy(False)
     results_relative, _ = test_analogy(True, p_fasttext)
