@@ -7,7 +7,7 @@ import random
 
 import torch
 import numpy as np
-from torchglow.data import get_dataset, get_decoder
+from torchglow.data import get_dataset_image, get_image_decoder, get_dataset_word_embedding
 
 
 def fix_seed(seed=12):
@@ -37,8 +37,8 @@ class Test(unittest.TestCase):
         for data in ['cifar10', 'celeba']:
             fix_seed()
             logging.info('get loader: {}'.format(data))
-            decoder = get_decoder()
-            train, val = get_dataset(data)
+            decoder = get_image_decoder()
+            train, val = get_dataset_image(data)
             logging.info('initialize iterator')
             train = iter(train)
             val = iter(val)
@@ -50,12 +50,19 @@ class Test(unittest.TestCase):
                 decoder(img).save('./tests/img/test_data/{}.valid.{}.png'.format(data, i))
 
         fix_seed()
-        train, val = get_dataset('celeba', image_size=64, n_bits_x=5)
-        decoder = get_decoder(n_bits_x=5)
+        train, val = get_dataset_image('celeba', image_size=64, n_bits_x=5)
+        decoder = get_image_decoder(n_bits_x=5)
         val = iter(val)
         for i in range(n_img):
             img = next(val)[0]
             decoder(img).save('./tests/img/test_data/{}.valid.{}.transform.png'.format(data, i))
+
+    def test_we(self):
+        train, val = get_dataset_word_embedding(model_type='relative')
+        train = iter(train)
+        val = iter(val)
+        print(next(train))
+        print(next(val))
 
 
 if __name__ == "__main__":

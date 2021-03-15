@@ -1,6 +1,5 @@
-""" Data iterators: `celba` and `cifar10`. """
+""" Data iterator for image dataset: `celba` and `cifar10`. """
 import os
-import pickle
 import struct
 import logging
 from glob import glob
@@ -16,14 +15,14 @@ from torchglow.util import open_compressed_file
 # The original processed data used in Glow paper
 URLS = {'celeba': 'https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar'}
 CACHE_DIR = '{}/.cache/torchglow'.format(os.path.expanduser('~'))
-__all__ = ('get_dataset', 'get_decoder')
+__all__ = ('get_dataset_image', 'get_image_decoder')
 
 
 def create_index(tfrecord_dir: str):
     """ Create index from the directory of tfrecords files.
     Stores starting location (byte) and length (in bytes) of each serialized record.
 
-    Params:
+    Parameters
     -------
     tfrecord_dir: str
         Path to the TFRecord file.
@@ -103,7 +102,7 @@ class Dataset(torch.utils.data.Dataset):
         return img, single_data['label'][0]
 
 
-def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size: int = None):
+def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size: int = None):
     """ Get dataset iterator.
 
     Parameters
@@ -155,7 +154,7 @@ def get_dataset(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size:
     return train_set, valid_set
 
 
-def get_decoder(n_bits_x: int = 8):
+def get_image_decoder(n_bits_x: int = 8):
     """ Get tensor decoder to get image. """
     n_bins = 2 ** n_bits_x
 

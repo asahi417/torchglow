@@ -3,7 +3,7 @@ note
 tests/output
 output
 _misc
-torchglow/reference
+reference
 tests/ckpt
 tests/img
 tests/data_sample

@@ -41,7 +41,8 @@ setup(
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
-            'torchglow-train = torchglow_cl.model_training:main'
+            'torchglow-train-2d = torchglow_cl.model_training_image:main',
+            'torchglow-train-1d = torchglow_cl.model_training_word_embedding:main'
         ]
     }
 )

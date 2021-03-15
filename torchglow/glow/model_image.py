@@ -1,18 +1,21 @@
-""" Main network for Glow """
+""" Glow for 2D image data """
 import logging
 from math import log
+
 import torch
-from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
+from .model_base import GlowBase
 from .module import GlowNetwork
 from ..config import Config
-from ..data.data import get_dataset, get_decoder
-from ..util import fix_seed, get_linear_schedule_with_warmup
+from ..data.data_image import get_dataset_image, get_image_decoder
+from ..util import fix_seed
+
+__all__ = 'Glow'
 
 
-class Glow(nn.Module):
-    """ Main network for Glow """
+class Glow(GlowBase):
+    """ Glow for 2D image data """
 
     def __init__(self,
                  training_step: int = 50000,
@@ -36,7 +39,7 @@ class Glow(nn.Module):
                  optimizer: str = 'adamax',
                  momentum: float = 0.9,
                  checkpoint_path: str = None):
-        """ Main network for Glow
+        """ Glow for 2D image data
 
         Parameters
         ----------
@@ -79,7 +82,7 @@ class Glow(nn.Module):
         checkpoint_path : str
             Path to checkpoint to load trained weight.
         """
-        super().__init__()
+        super(Glow, self).__init__()
         fix_seed(random_seed)
         # config
         self.config = Config(
@@ -118,13 +121,6 @@ class Glow(nn.Module):
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('Glow model: {}M parameters'.format(round(model_size/10**6)))
 
-        # a few initialization related to optimization
-        self.optimizer = None
-        self.scheduler = None
-        self.scaler = None
-        self.n_gpu = torch.cuda.device_count()
-        self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
-
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
             self.model.load_state_dict(torch.load(self.config.model_weight_path))
@@ -135,47 +131,16 @@ class Glow(nn.Module):
 
         self.checkpoint_dir = self.config.cache_dir
 
-    def __setup_optimizer(self, fp16):
-        # optimizer
-        if self.config.optimizer == 'adamax':
-            self.optimizer = torch.optim.Adamax(
-                self.model.parameters(), lr=self.config.lr)
-        elif self.config.optimizer == 'adam':
-            self.optimizer = torch.optim.AdamW(
-                self.model.parameters(), lr=self.config.lr)
-        elif self.config.optimizer == 'sgd':
-            self.optimizer = torch.optim.SGD(
-                self.model.parameters(), lr=self.config.lr, momentum=self.config.momentum)
-        elif self.config.optimizer == 'adamw':
-            self.optimizer = torch.optim.AdamW(
-                self.model.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay)
-        else:
-            raise ValueError('unknown optimizer: {}'.format(self.config.optimizer))
-        # scheduler
-        self.scheduler = get_linear_schedule_with_warmup(
-            self.optimizer,
-            num_warmup_steps=self.config.epoch_warmup,
-            num_training_steps=self.config.epoch if self.config.decay_lr else None)
-        # load from exsiting config
-        if self.config.is_trained:
-            optimizer_stat = torch.load(self.config.optimizer_path, map_location='cpu')  # allocate stats on cpu
-            self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
-            self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
-
-        # GPU mixture precision
-        self.scaler = torch.cuda.amp.GradScaler(enabled=fp16)
-        # multi-gpus
-        if self.n_gpu > 1:
-            # multi-gpu training (should be after apex fp16 initialization)
-            self.model = torch.nn.DataParallel(self.model)
-            logging.info('using `torch.nn.DataParallel`')
+    def setup_data(self, cache_dir):
+        return get_dataset_image(
+            self.config.data, cache_dir=cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
 
     def reconstruct(self, sample_size: int = 5, cache_dir: str = None, batch: int = 5):
         """ Reconstruct validation image by Glow """
         assert self.config.is_trained, 'model is not trained'
-        _, data_valid = get_dataset(
+        _, data_valid = get_dataset_image(
             self.config.data, cache_dir=cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
-        decoder = get_decoder(n_bits_x=self.config.n_bits_x)
+        decoder = get_image_decoder(n_bits_x=self.config.n_bits_x)
         loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
         image_original = []
         image_reconstruct = []
@@ -190,97 +155,7 @@ class Glow(nn.Module):
                     break
         return image_original[:sample_size], image_reconstruct[:sample_size]
 
-    def train(self,
-              batch_valid: int = 32,
-              cache_dir: str = None,
-              num_workers: int = 0,
-              fp16: bool = False,
-              progress_interval: int = 100,
-              epoch_valid: int = 100,
-              epoch_save: int = 100000):
-        """ Train Glow model
-
-        Parameters
-        ----------
-        batch_valid : int
-            The size of batch for validation.
-        cache_dir : int
-            Directory for cache the datasets.
-        num_workers : int
-            Workers for DataLoader.
-        fp16 : bool
-            Mixed precision to save memory.
-        progress_interval : int
-            Interval to log loss during training.
-        epoch_valid : int
-            Epoch to run validation eg) Every 100 epoch, it will run validation as default.
-        epoch_save : int
-            Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
-        """
-        # assert not self.config.is_trained, 'model has already been trained'
-        assert not self.config.is_fully_trained, 'model was fully trained over all epochs'
-        batch_valid = self.config.batch if batch_valid is None else batch_valid
-        writer = SummaryWriter(log_dir=self.config.cache_dir)
-
-        logging.debug('setting up optimizer')
-        self.__setup_optimizer(fp16=fp16)
-
-        logging.debug('loading data iterator')
-        data_train, data_valid = get_dataset(
-            self.config.data, cache_dir=cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
-        if self.config.epoch_elapsed == 0:
-            logging.debug('data-dependent initialization')
-            loader = torch.utils.data.DataLoader(
-                data_train, batch_size=self.config.batch_init, shuffle=True)
-            self.__data_dependent_initialization(loader)
-
-        logging.info('start model training')
-        loader = torch.utils.data.DataLoader(
-            data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers)
-        loader_valid = torch.utils.data.DataLoader(
-            data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
-
-        try:
-            with torch.cuda.amp.autocast(enabled=fp16):
-                for e in range(self.config.epoch_elapsed, self.config.epoch):  # loop over the epoch
-
-                    mean_bpd = self.__train_single_epoch(
-                        loader, epoch_n=e, progress_interval=progress_interval, writer=writer)
-                    inst_lr = self.optimizer.param_groups[0]['lr']
-                    logging.info('[epoch {}/{}] average bpd: {}: lr {}'.format(
-                        e, self.config.epoch, round(mean_bpd, 3), inst_lr))
-
-                    if e % epoch_valid == 0 and e != 0:
-                        logging.debug('running validation')
-                        mean_bpd = self.__valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
-                        logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(
-                            e, self.config.epoch, round(mean_bpd, 3)))
-
-                    if e % epoch_save == 0 and e != 0:
-                        self.config.save(self.model.state_dict(), epoch=e)
-
-                    self.scheduler.step()
-
-        except KeyboardInterrupt:
-            logging.info('*** KeyboardInterrupt ***')
-
-        writer.close()
-        self.config.save(
-            self.model.state_dict(),
-            optimizer_state_dict=self.optimizer.state_dict(),
-            scheduler_state_dict=self.scheduler.state_dict(),
-            epoch=e,
-            last_model=True)
-        logging.info('complete training: model ckpt was saved at {}'.format(self.config.cache_dir))
-
-    def __data_dependent_initialization(self, data_loader):
-        with torch.no_grad():
-            loader = iter(data_loader)
-            x, _ = next(loader)
-            x = x.to(self.device)
-            self.model(x, return_loss=False, initialize_actnorm=True)
-
-    def __train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
+    def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
         self.model.train()
         n_bins = 2 ** self.config.n_bits_x
         step_in_epoch = int(round(self.config.training_step / self.config.batch))
@@ -325,7 +200,7 @@ class Glow(nn.Module):
 
         return total_bpd / data_size
 
-    def __valid_single_epoch(self, data_loader, epoch_n: int, writer):
+    def valid_single_epoch(self, data_loader, epoch_n: int, writer):
         self.model.eval()
         n_bins = 2 ** self.config.n_bits_x
         total_bpd = 0
@@ -345,4 +220,3 @@ class Glow(nn.Module):
         bpd = total_bpd / data_size
         writer.add_scalar('valid/bits_per_dim', bpd, epoch_n)
         return bpd
-
