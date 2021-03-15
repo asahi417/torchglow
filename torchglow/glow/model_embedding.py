@@ -175,3 +175,21 @@ class GlowWordEmbedding(GlowBase):
         bpd = total_nll / data_size
         writer.add_scalar('valid/nll', bpd, epoch_n)
         return bpd
+
+    def reconstruct(self, sample_size: int = 5, cache_dir: str = None, batch: int = 5):
+        """ Reconstruct validation embedding by Glow """
+        assert self.config.is_trained, 'model is not trained'
+        _, data_valid = self.setup_data(cache_dir)
+        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
+        embedding_original = []
+        embedding_reconstruct = []
+        with torch.no_grad():
+            for data in loader:
+                z, _ = self.model(data[0].to(self.device), return_loss=False)
+                y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
+                embedding_original += data[0].cpu().tolist()
+                embedding_reconstruct += y.cpu().tolist()
+
+                if len(embedding_reconstruct) > sample_size:
+                    break
+        return embedding_original[:sample_size], embedding_reconstruct[:sample_size]

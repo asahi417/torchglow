@@ -11,7 +11,7 @@ def get_options():
     parser.add_argument('-e', '--epoch', help='training epochs', default=2000, type=int)
     parser.add_argument('-d', '--data', help='data set from `celeba`, `cifar10`', default='cifar10', type=str)
     parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt', type=str)
-    parser.add_argument('-b', '--batch', help='batch size', default=64, type=int)
+    parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
     parser.add_argument('--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('--image-size', help='image size', default=32, type=int)
     parser.add_argument('--batch-init', help='number of batch for data dependent initialization', default=256, type=int)

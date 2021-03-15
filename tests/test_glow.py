@@ -44,6 +44,12 @@ class Test(unittest.TestCase):
             batch=2,
         )
         model.train(epoch_valid=10)
+        x, y = model.reconstruct(10)
+        for n, (_x, _y) in enumerate(zip(x, y)):
+            print(_x)
+            print(_y)
+            input()
+            # assert _x == _y
 
 
 if __name__ == "__main__":
