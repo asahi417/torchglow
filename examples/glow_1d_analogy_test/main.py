@@ -65,7 +65,6 @@ if __name__ == '__main__':
             tmp_result = {'model_type': model.config.model_type, 'data': i, 'epoch': e, 'ckpt': opt.checkpoint_path}
             val, test = get_dataset_raw(i)
             all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in val + test]))
-            print(all_pairs)
             all_pairs_format = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
             all_pairs_format = list(filter(lambda x: x in model.vocab(), all_pairs_format))
             vector = model.embed(all_pairs_format, batch=opt.batch)
