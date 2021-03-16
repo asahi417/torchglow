@@ -36,8 +36,7 @@ def get_dataset_word_embedding(model_type: str, cache_dir: str = None, validatio
 def get_iterator_word_embedding(model_type: str, cache_dir: str = None):
     cache_dir = cache_dir if cache_dir is not None else CACHE_DIR
     url, filename = URL_MODEL[model_type]
-    model_path = '{}/{}'.format(cache_dir, os.path.basename(url))
-    model_path_bin = model_path.replace('.tar.gz', '')
+    model_path_bin = '{}/{}'.format(cache_dir, filename).replace('.tar.gz', '')
     if not os.path.exists(model_path_bin):
         logging.debug('downloading word embedding model from {}'.format(url))
         open_compressed_file(url, cache_dir, filename=filename)
