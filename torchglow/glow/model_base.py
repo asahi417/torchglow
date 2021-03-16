@@ -67,8 +67,11 @@ class GlowBase(nn.Module):
         logging.info('start model training')
         loader = torch.utils.data.DataLoader(
             data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers)
-        loader_valid = torch.utils.data.DataLoader(
-            data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
+        if data_valid is not None:
+            loader_valid = torch.utils.data.DataLoader(
+                data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
+        else:
+            loader_valid = None
 
         try:
             with torch.cuda.amp.autocast(enabled=fp16):
@@ -80,7 +83,7 @@ class GlowBase(nn.Module):
                     logging.info('[epoch {}/{}] average bpd: {}, lr: {}'.format(
                         e, self.config.epoch, round(mean_bpd, 3), inst_lr))
 
-                    if e % epoch_valid == 0 and e != 0:
+                    if e % epoch_valid == 0 and e != 0 and loader_valid is not None:
                         logging.debug('running validation')
                         mean_bpd = self.valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
                         logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(

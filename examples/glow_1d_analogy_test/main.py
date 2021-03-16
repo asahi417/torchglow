@@ -45,7 +45,7 @@ def cos_similarity(a_, b_):
 def get_options():
     parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
     # model parameter
-    parser.add_argument('--checkpoint-path', help='model checkpoint', required=True, type=str)
+    parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/relative/*', type=str)
     parser.add_argument('-o', '--output-dir', help='directory to export model weight file',
                         default='./examples/glow_1d_analogy_test', type=str)
     parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
@@ -54,7 +54,8 @@ def get_options():
 
 if __name__ == '__main__':
     opt = get_options()
-    checkpoint_paths = opt.checkpoint_path.split(',')
+    checkpoint_paths = glob(opt.checkpoint_path)
+    # checkpoint_paths = opt.checkpoint_path.split(',')
     result = []
     for checkpoint_path in checkpoint_paths:
         epochs = [i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(checkpoint_path))]
@@ -65,7 +66,8 @@ if __name__ == '__main__':
                 model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path)
 
             for i in DATA:
-                tmp_result = {'ckpt': checkpoint_path, 'data': i, 'epoch': e}
+                tmp_result = {'model_type': model.config.model_type, 'n_flow': model.config.n_flow, 'data': i,
+                              'epoch': model.config.epoch_elapsed}
                 val, test = get_dataset_raw(i)
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in val + test]))
                 all_pairs_format = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
@@ -94,9 +96,8 @@ if __name__ == '__main__':
                 tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
                                           tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
                 result.append(tmp_result)
+
     df = pd.DataFrame(result)
     df = df.sort_values(by=['data', 'ckpt', 'epoch'])
     print(df)
     df.to_csv('{}/result.csv'.format(opt.output_dir))
-    # pd.DataFrame(tmp_result).tocsv('./result.csv')
-    # logging.info('finish evaluation: result was exported to {}'.format('./result.jsonl'))

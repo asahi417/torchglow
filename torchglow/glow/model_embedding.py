@@ -193,7 +193,9 @@ class GlowWordEmbedding(GlowBase):
         """ Reconstruct validation embedding by Glow """
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        _, data_valid = self.setup_data(cache_dir)
+        data_train, data_valid = self.setup_data(cache_dir)
+        if data_valid is None:
+            data_valid = data_train
         loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
         embedding_original = []
         embedding_reconstruct = []

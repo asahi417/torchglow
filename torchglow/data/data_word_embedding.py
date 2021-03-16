@@ -22,6 +22,8 @@ def get_dataset_word_embedding(model_type: str, cache_dir: str = None, validatio
     data_iterator = get_iterator_word_embedding(model_type, cache_dir)
     data = list(data_iterator.model_vocab)
     random.Random(0).shuffle(data)
+    if validation_rate == 0:
+        return data_iterator(data), None
     n = int(len(data) * validation_rate)
 
     valid_set = data_iterator(data[:n])
@@ -51,12 +53,8 @@ def get_iterator_word_embedding(model_type: str, cache_dir: str = None):
             return len(self.vocab)
 
         def __getitem__(self, idx):
-            # word = self.process(self.vocab[idx])
             tensor = torch.tensor(np.array(model[self.vocab[idx]]), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1),  # return in CHW shape
 
-        # @staticmethod
-        # def process(pair):
-        #     return pair.replace(' ', '_').lower()
 
     return DatasetWordEmbedding
