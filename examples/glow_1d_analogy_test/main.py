@@ -66,7 +66,7 @@ if __name__ == '__main__':
                 model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path)
 
             for i in DATA:
-                tmp_result = {'model_type': model.config.model_type, 'n_flow_step': model.config.n_flow, 'data': i,
+                tmp_result = {'model_type': model.config.model_type, 'n_flow_step': model.config.n_flow_step, 'data': i,
                               'epoch': model.config.epoch_elapsed}
                 val, test = get_dataset_raw(i)
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in val + test]))
