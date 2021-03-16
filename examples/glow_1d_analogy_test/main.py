@@ -46,11 +46,8 @@ def get_options():
     parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
     # model parameter
     parser.add_argument('--checkpoint-path', help='model checkpoint', required=True, type=str)
-    parser.add_argument('-e', '--epoch', help='to use intermediate model', default=None, type=int)
     parser.add_argument('-o', '--output-dir', help='directory to export model weight file', default='./ckpt', type=str)
     parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
-    # misc
-    parser.add_argument('--debug', help='log level', action='store_true')
     return parser.parse_args()
 
 
@@ -67,7 +64,8 @@ if __name__ == '__main__':
         for i in DATA:
             tmp_result = {'model_type': model.config.model_type, 'data': i, 'epoch': e, 'ckpt': opt.checkpoint_path}
             val, test = get_dataset_raw(i)
-            all_pairs = list(chain(*[[o['stem'], o['choice']] for o in val + test]))
+            all_pairs = list(chain(*[[[o['stem']] + o['choice']] for o in val + test]))
+            print(all_pairs)
             all_pairs_format = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
             all_pairs_format = list(filter(lambda x: x in model.vocab(), all_pairs_format))
             vector = model.embed(all_pairs_format, batch=opt.batch)
