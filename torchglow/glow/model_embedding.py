@@ -236,7 +236,7 @@ class GlowWordEmbedding(GlowBase):
                 z, _ = self.model(data[0].to(self.device), return_loss=False)
                 # reshape from CHW -> W
                 z = z.reshape(-1, N_DIM[self.config.model_type])
-                latent_variable += z.cpu().numpy()
+                latent_variable += z.cpu().tolist()
         return latent_variable
 
     def vocab(self, cache_dir: str = None):

@@ -36,9 +36,9 @@ def get_dataset_raw(data_name: str):
 
 
 def cos_similarity(a_, b_):
-    inner = (a_ * b_).sum()
-    norm_a = (a_ * a_).sum() ** 0.5
-    norm_b = (b_ * b_).sum() ** 0.5
+    inner = sum(list(map(lambda x: x[0] * x[1], zip(a_, b_))))
+    norm_a = sum(list(map(lambda x: x * x, a_))) ** 0.5
+    norm_b = sum(list(map(lambda x: x * x, b_))) ** 0.5
     return inner / (norm_b * norm_a)
 
 
