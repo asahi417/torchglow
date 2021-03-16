@@ -98,6 +98,5 @@ if __name__ == '__main__':
                 result.append(tmp_result)
 
     df = pd.DataFrame(result)
-    df = df.sort_values(by=['data', 'ckpt', 'epoch'])
     print(df)
     df.to_csv('{}/result.csv'.format(opt.output_dir))
