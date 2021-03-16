@@ -45,7 +45,7 @@ def cos_similarity(a_, b_):
 def get_options():
     parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
     # model parameter
-    parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/relative/*', type=str)
+    parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/fasttext_diff/*', type=str)
     parser.add_argument('-o', '--output-dir', help='directory to export model weight file',
                         default='./examples/glow_1d_analogy_test', type=str)
     parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
@@ -55,8 +55,23 @@ def get_options():
 if __name__ == '__main__':
     opt = get_options()
     checkpoint_paths = glob(opt.checkpoint_path)
-    # checkpoint_paths = opt.checkpoint_path.split(',')
+
     result = []
+    # add fasttext baseline
+    for i in DATA:
+        tmp_result = {'model_type': 'fasttext_baseline', 'n_flow_step': None, 'data': i,
+                      'epoch': None, 'unit_gaussian': None}
+        val, test = get_dataset_raw(i)
+        for prefix, data in zip(['test', 'valid'], [test, val]):
+            tmp_result['oov_{}'.format(prefix)] = 0
+            prediction = BASE_PREDICTION[i][prefix]
+            accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
+            tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy) / len(accuracy)
+        tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
+                                  tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
+        result.append(tmp_result)
+
+    # add glow models
     for checkpoint_path in checkpoint_paths:
         epochs = [i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(checkpoint_path))]
         for e in epochs + [None]:
@@ -98,5 +113,4 @@ if __name__ == '__main__':
                 result.append(tmp_result)
 
     df = pd.DataFrame(result)
-    print(df)
     df.to_csv('{}/result.csv'.format(opt.output_dir))
