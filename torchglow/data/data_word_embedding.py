@@ -11,10 +11,11 @@ from ..util import open_compressed_file
 
 CACHE_DIR = '{}/.cache/torchglow/word_embedding'.format(os.path.expanduser('~'))
 URL_MODEL = {
-    'relative': 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/relative_init_vectors.bin.tar.gz',
-    'fasttext_diff': 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/fasttext_diff_vectors.bin.tar.gz',
-    'concat_relative_fasttext': 'https://drive.google.com/u/0/uc?id=1CkdsxEl21TUiBmLS6uq55tH6SiHvWGDn&export=download'
+    'relative_init': ['https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/relative_init_vectors.bin.tar.gz', 'relative_init_vectors.bin.tar.gz'],
+    'fasttext_diff': ['https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/fasttext_diff_vectors.bin.tar.gz', 'fasttext_diff_vectors.bin.tar.gz'],
+    'concat_relative_fasttext': ['https://drive.google.com/u/0/uc?id=1CkdsxEl21TUiBmLS6uq55tH6SiHvWGDn&export=download', 'concat_relative_fasttext_vectors.bin.tar.gz']
 }
+
 N_DIM = {'relative': 300, 'fasttext_diff': 300, 'concat_relative_fasttext': 600}
 __all__ = ('get_dataset_word_embedding', 'get_iterator_word_embedding', 'N_DIM')
 
@@ -34,12 +35,12 @@ def get_dataset_word_embedding(model_type: str, cache_dir: str = None, validatio
 
 def get_iterator_word_embedding(model_type: str, cache_dir: str = None):
     cache_dir = cache_dir if cache_dir is not None else CACHE_DIR
-    url = URL_MODEL[model_type]
+    url, filename = URL_MODEL[model_type]
     model_path = '{}/{}'.format(cache_dir, os.path.basename(url))
     model_path_bin = model_path.replace('.tar.gz', '')
     if not os.path.exists(model_path_bin):
         logging.debug('downloading word embedding model from {}'.format(url))
-        open_compressed_file(url, cache_dir)
+        open_compressed_file(url, cache_dir, filename=filename)
 
     model = KeyedVectors.load_word2vec_format(model_path_bin, binary=True)
 

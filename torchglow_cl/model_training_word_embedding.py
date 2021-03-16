@@ -8,7 +8,7 @@ def get_options():
     parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
     # model parameter
     parser.add_argument('-m', '--model-type', help='embedding model type (`relative`, `fasttext_diff`)',
-                        default='fasttext', type=str)
+                        default='fasttext_diff', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.2, type=float)
 
     parser.add_argument('-s', '--training-step', help='training step in single epoch', default=950000, type=int)
