@@ -90,9 +90,7 @@ if __name__ == '__main__':
                 for prefix, data in zip(['test', 'valid'], [test, val]):
                     prediction = [get_prediction(o) for o in data]
                     tmp_result['oov_{}'.format(prefix)] = len([p for p in prediction if p is None])
-                    print(BASE_PREDICTION[data][prefix])
-                    print(prediction)
-                    prediction = [p if p is not None else BASE_PREDICTION[data][prefix][n] for n, p in enumerate(prediction)]
+                    prediction = [p if p is not None else BASE_PREDICTION[i][prefix][n] for n, p in enumerate(prediction)]
                     accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
                     tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy)/len(accuracy)
                 tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
