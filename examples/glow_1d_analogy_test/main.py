@@ -67,7 +67,7 @@ if __name__ == '__main__':
 
             for i in DATA:
                 tmp_result = {'model_type': model.config.model_type, 'n_flow_step': model.config.n_flow_step, 'data': i,
-                              'epoch': model.config.epoch_elapsed}
+                              'epoch': model.config.epoch_elapsed, 'unit_gaussian': model.config.unit_gaussian}
                 val, test = get_dataset_raw(i)
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in val + test]))
                 all_pairs_format = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
