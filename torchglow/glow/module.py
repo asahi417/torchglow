@@ -273,14 +273,18 @@ class Split(nn.Module):
     """
     log2pi = float(np.log(2 * np.pi))
 
-    def __init__(self, in_channels, split: bool = True, kernel_size: int = 3, stride: int = 1):
+    def __init__(self, in_channels, split: bool = True, kernel_size: int = 3, stride: int = 1,
+                 unit_gaussian: bool = False):
         super().__init__()
         self.split = split
-        if self.split:
-            assert in_channels % 2 == 0, in_channels
-            self.conv = ZeroConv2d(in_channels // 2, in_channels, kernel_size=kernel_size, stride=stride)
+        if unit_gaussian:
+            self.conv = None
         else:
-            self.conv = ZeroConv2d(in_channels, in_channels * 2, kernel_size=kernel_size, stride=stride)
+            if self.split:
+                assert in_channels % 2 == 0, in_channels
+                self.conv = ZeroConv2d(in_channels // 2, in_channels, kernel_size=kernel_size, stride=stride)
+            else:
+                self.conv = ZeroConv2d(in_channels, in_channels * 2, kernel_size=kernel_size, stride=stride)
 
     def forward(self, x, z=None, log_det=None, reverse: bool = False, eps_std: float = None):
         """ Splitting forward inference/reverse sampling module.
@@ -311,13 +315,19 @@ class Split(nn.Module):
         if reverse:
             if self.split:
                 if z is None:
-                    mean, log_sd = self.conv(x).chunk(2, 1)
+                    if self.conv is not None:
+                        mean, log_sd = self.conv(x).chunk(2, 1)
+                    else:
+                        mean = log_sd = torch.zeros_like(x)
                     z = self.gaussian_sample(mean, log_sd, eps_std)
                 z = torch.cat((x, z), dim=1)
             else:
                 if z is None:
                     assert x.sum() == 0, 'sampling seed should be zero tensor'
-                    mean, log_sd = self.conv(x).chunk(2, 1)
+                    if self.conv is not None:
+                        mean, log_sd = self.conv(x).chunk(2, 1)
+                    else:
+                        mean = log_sd = torch.zeros_like(x)
                     z = self.gaussian_sample(mean, log_sd, eps_std)
             return z, log_det
         else:
@@ -327,7 +337,10 @@ class Split(nn.Module):
             else:
                 z1 = torch.zeros_like(x)
                 z2 = x
-            mean, log_sd = self.conv(z1).chunk(2, 1)
+            if self.conv is not None:
+                mean, log_sd = self.conv(z1).chunk(2, 1)
+            else:
+                mean = log_sd = torch.zeros_like(z1)
             if log_det is not None:
                 log_likeli = self.gaussian_log_likelihood(z2, mean, log_sd)
                 log_det = log_det + log_likeli.view(x.shape[0], -1).sum(1)
@@ -495,7 +508,8 @@ class GlowNetwork1D(nn.Module):
                  filter_size: int = 512,
                  n_flow_step: int = 10,
                  actnorm_scale: float = 1.0,
-                 lu_decomposition: bool = False):
+                 lu_decomposition: bool = False,
+                 unit_gaussian: bool = False):
         """ Glow network architecture
 
         Parameters
@@ -519,7 +533,8 @@ class GlowNetwork1D(nn.Module):
         self.n_channel = n_channel
         for _ in range(self.n_flow_step):
             self.layers.append(FlowStep(in_channels=self.n_channel, **flow_config))
-        self.layers.append(Split(in_channels=self.n_channel, split=False, stride=1, kernel_size=1))
+        self.layers.append(Split(
+            in_channels=self.n_channel, split=False, stride=1, kernel_size=1, unit_gaussian=unit_gaussian))
         self.last_latent_shape = [self.n_channel, 1, 1]
 
     def forward(self,

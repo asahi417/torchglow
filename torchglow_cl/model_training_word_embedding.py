@@ -27,6 +27,7 @@ def get_options():
     parser.add_argument("--weight-decay", help="l2 penalty for weight decay", default=1e-6, type=float)
     parser.add_argument('--optimizer', help='optimizer `adam`/`adamax`/`adamw`', default='adamw', type=str)
     parser.add_argument("--momentum", help="sgd momentum", default=0.9, type=float)
+    parser.add_argument('--unit-gaussian', help='unit gaussian instead of learnt gaussian', action='store_true')
     # optimization parameter
     parser.add_argument('--batch-valid', help='batch size for validation', default=16384, type=int)
     parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
@@ -67,7 +68,8 @@ def main():
         weight_decay=opt.weight_decay,
         optimizer=opt.optimizer,
         momentum=opt.momentum,
-        checkpoint_path=opt.checkpoint_path
+        checkpoint_path=opt.checkpoint_path,
+        unit_gaussian=opt.unit_gaussian
     )
     trainer.train(
         batch_valid=opt.batch_valid,

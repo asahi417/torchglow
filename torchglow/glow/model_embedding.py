@@ -35,7 +35,8 @@ class GlowWordEmbedding(GlowBase):
                  optimizer: str = 'adamax',
                  momentum: float = 0.9,
                  checkpoint_path: str = None,
-                 checkpoint_option: Dict = None):
+                 checkpoint_option: Dict = None,
+                 unit_gaussian: bool = False):
         """ Glow on 1D Word Embeddings
 
         Parameters
@@ -97,7 +98,8 @@ class GlowWordEmbedding(GlowBase):
             weight_decay=weight_decay,
             optimizer=optimizer,
             batch_init=batch_init,
-            momentum=momentum
+            momentum=momentum,
+            unit_gaussian=unit_gaussian
         )
         # model
         self.model = GlowNetwork1D(
@@ -105,7 +107,8 @@ class GlowWordEmbedding(GlowBase):
             filter_size=self.config.filter_size,
             n_flow_step=self.config.n_flow_step,
             actnorm_scale=self.config.actnorm_scale,
-            lu_decomposition=self.config.lu_decomposition
+            lu_decomposition=self.config.lu_decomposition,
+            unit_gaussian=self.config.unit_gaussian
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
