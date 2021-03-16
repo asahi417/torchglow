@@ -12,9 +12,10 @@ from ..util import open_compressed_file
 CACHE_DIR = '{}/.cache/torchglow/word_embedding'.format(os.path.expanduser('~'))
 URL_MODEL = {
     'relative': 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/relative_init_vectors.bin.tar.gz',
-    'fasttext_diff': 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/fasttext_diff_vectors.bin.tar.gz'
+    'fasttext_diff': 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0/fasttext_diff_vectors.bin.tar.gz',
+    'concat_relative_fasttext': 'https://drive.google.com/u/0/uc?id=1CkdsxEl21TUiBmLS6uq55tH6SiHvWGDn&export=download'
 }
-N_DIM = {'relative': 300, 'fasttext_diff': 300}
+N_DIM = {'relative': 300, 'fasttext_diff': 300, 'concat_relative_fasttext': 600}
 __all__ = ('get_dataset_word_embedding', 'get_iterator_word_embedding', 'N_DIM')
 
 
@@ -56,5 +57,5 @@ def get_iterator_word_embedding(model_type: str, cache_dir: str = None):
             tensor = torch.tensor(np.array(model[self.vocab[idx]]), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1),  # return in CHW shape
 
-
     return DatasetWordEmbedding
+

@@ -13,10 +13,11 @@ logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logg
 DATA = ['sat', 'u2', 'u4', 'google', 'bats']
 
 # Fasttext prediction as the baseline
-FASTTEXT_PREDICTION = 'fasttext_prediction.json'
+FASTTEXT_PREDICTION = 'fasttext_diff.json'
 if not os.path.exists(FASTTEXT_PREDICTION):
     torchglow.util.open_compressed_file(
-        url='https://raw.githubusercontent.com/asahi417/AnalogyDataset/master/fasttext_prediction.json', cache_dir='.')
+        url='https://raw.githubusercontent.com/asahi417/AnalogyDataset/master/predictions/fasttext_diff.json',
+        cache_dir='./cache')
 with open(FASTTEXT_PREDICTION) as f:
     BASE_PREDICTION = json.load(f)
 
