@@ -10,9 +10,9 @@ import pandas as pd
 import torchglow
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
-
-# Analogy data
 DATA = ['sat', 'u2', 'u4', 'google', 'bats']
+
+# Fasttext prediction as the baseline
 FASTTEXT_PREDICTION = 'fasttext_prediction.json'
 if not os.path.exists(FASTTEXT_PREDICTION):
     torchglow.util.open_compressed_file(
@@ -79,10 +79,11 @@ if __name__ == '__main__':
                 model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path, checkpoint_option={'epoch': e})
             else:
                 model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path)
+                e = model.config.epoch_elapsed
 
             for i in DATA:
                 tmp_result = {'model_type': model.config.model_type, 'n_flow_step': model.config.n_flow_step, 'data': i,
-                              'epoch': model.config.epoch_elapsed, 'unit_gaussian': model.config.unit_gaussian}
+                              'epoch': e, 'unit_gaussian': model.config.unit_gaussian}
                 val, test = get_dataset_raw(i)
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in val + test]))
                 all_pairs_format = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
