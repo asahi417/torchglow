@@ -128,6 +128,7 @@ class GlowWordEmbedding(GlowBase):
         logging.info('running on {} GPUs'.format(self.n_gpu))
 
         self.checkpoint_dir = self.config.cache_dir
+        self.data_iterator = None
 
     def setup_data(self, cache_dir, return_iterator: bool = False):
         if return_iterator:
@@ -225,9 +226,10 @@ class GlowWordEmbedding(GlowBase):
         """
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        data_iterator = self.setup_data(cache_dir, return_iterator=True)
+        if self.data_iterator is None:
+            self.data_iterator = self.setup_data(cache_dir, return_iterator=True)
         batch = batch if batch is not None else self.config.batch
-        loader = torch.utils.data.DataLoader(data_iterator(data), batch_size=batch)
+        loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
         latent_variable = []
         with torch.no_grad():
             for data in loader:
@@ -236,3 +238,8 @@ class GlowWordEmbedding(GlowBase):
                 z = z.reshape(-1, N_DIM[self.config.model_type])
                 latent_variable += z.cpu().tolist()
         return latent_variable
+
+    def vocab(self, cache_dir: str = None):
+        if self.data_iterator is None:
+            self.data_iterator = self.setup_data(cache_dir, return_iterator=True)
+        return self.data_iterator.model_vocab

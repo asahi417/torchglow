@@ -3,16 +3,22 @@ import os
 import logging
 import json
 import argparse
+from glob import glob
+from itertools import chain
 
-from gensim.models import fasttext
-from gensim.models import KeyedVectors
-
+import pandas as pd
 import torchglow
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
 
 # Analogy data
 DATA = ['sat', 'u2', 'u4', 'google', 'bats']
+FASTTEXT_PREDICTION = 'fasttext_prediction.json'
+if not os.path.exists(FASTTEXT_PREDICTION):
+    torchglow.util.open_compressed_file(
+        url='https://raw.githubusercontent.com/asahi417/AnalogyDataset/master/fasttext_prediction.json', cache_dir='.')
+with open(FASTTEXT_PREDICTION) as f:
+    BASE_PREDICTION = json.load(f)
 
 
 def get_dataset_raw(data_name: str):
@@ -29,75 +35,11 @@ def get_dataset_raw(data_name: str):
     return val_set, test_set
 
 
-def embedding(term, model):
-    try:
-        return model[term]
-    except Exception:
-        return None
-
-
 def cos_similarity(a_, b_):
-    if a_ is None or b_ is None:
-        return -100
     inner = (a_ * b_).sum()
     norm_a = (a_ * a_).sum() ** 0.5
     norm_b = (b_ * b_).sum() ** 0.5
-    if norm_a == 0 or norm_b == 0:
-        return -100
     return inner / (norm_b * norm_a)
-
-
-def get_prediction(stem, choice, embedding_model, relative: bool = False):
-    if relative:
-        # relative vector
-        stem = '__'.join(stem)
-        choice = ['__'.join(c) for c in choice]
-        e_dict = dict([(_i, embedding(_i, embedding_model)) for _i in choice + [stem]])
-    else:
-        # diff vector
-        def diff(x, y):
-            if x is None or y is None:
-                return None
-            return x - y
-
-        e_dict = {
-            '__'.join(stem): diff(embedding(stem[0], embedding_model), embedding(stem[1], embedding_model))
-        }
-        for h, t in choice:
-            e_dict['__'.join([h, t])] = diff(embedding(h, embedding_model), embedding(t, embedding_model))
-        stem = '__'.join(stem)
-        choice = ['__'.join(c) for c in choice]
-
-    score = [cos_similarity(e_dict[stem], e_dict[c]) for c in choice]
-    pred = score.index(max(score))
-    if score[pred] == -100:
-        return None
-    return pred
-
-
-def test_analogy(reference_prediction=None):
-    if is_relative:
-        word_embedding_model = KeyedVectors.load_word2vec_format(PATH_RELATIVE_EMBEDDING, binary=True)
-        model_name = 'relative'
-    else:
-        word_embedding_model = fasttext.load_facebook_model(PATH_WORD_EMBEDDING)
-        model_name = 'fasttext'
-
-    prediction = {}
-    results = []
-    for i in DATA:
-        tmp_result = {'model': model_name, 'data': i}
-        val, test = get_dataset_raw(i)
-        prediction[i] = {}
-        for prefix, data in zip(['test', 'valid'], [test, val]):
-            pred = [get_prediction(o['stem'], o['choice'], word_embedding_model, relative=is_relative) for o in data]
-            prediction[i][prefix] = pred
-            tmp_result['oov_{}'.format(prefix)] = len([p for p in pred if p is None])
-            pred = [p if p is not None else reference_prediction[i][prefix][n] for n, p in enumerate(pred)]
-            accuracy = sum([o['answer'] == pred[n] for n, o in enumerate(data)]) / len(pred)
-            tmp_result['accuracy_{}'.format(prefix)] = accuracy
-        results.append(tmp_result)
-    return results, prediction
 
 
 def get_options():
@@ -106,15 +48,7 @@ def get_options():
     parser.add_argument('--checkpoint-path', help='model checkpoint', required=True, type=str)
     parser.add_argument('-e', '--epoch', help='to use intermediate model', default=None, type=int)
     parser.add_argument('-o', '--output-dir', help='directory to export model weight file', default='./ckpt', type=str)
-    parser.add_argument('--batch-valid', help='batch size for validation', default=8192, type=int)
-
-    # optimization parameter
-    parser.add_argument('--batch-valid', help='batch size for validation', default=1024, type=int)
-    parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
-    parser.add_argument('--num-workers', help='workers for dataloder', default=0, type=int)
-    parser.add_argument('--progress-interval', help='log interval during training', default=100, type=int)
-    parser.add_argument('--epoch-valid', help='interval to run validation', default=1, type=int)
-    parser.add_argument('--epoch-save', help='interval to save model weight', default=1000, type=int)
+    parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
     # misc
     parser.add_argument('--debug', help='log level', action='store_true')
     return parser.parse_args()
@@ -122,14 +56,44 @@ def get_options():
 
 if __name__ == '__main__':
     opt = get_options()
-    if opt.epoch:
-        model = torchglow.GlowWordEmbedding(checkpoint_path=opt.checkpoint_path, checkpoint_option={'epoch': opt.epoch})
-    else:
-        model = torchglow.GlowWordEmbedding(checkpoint_path=opt.checkpoint_path)
+    epochs = [i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(opt.checkpoint_path))]
+    result = []
+    for e in epochs + [None]:
+        if e is not None:
+            model = torchglow.GlowWordEmbedding(checkpoint_path=opt.checkpoint_path, checkpoint_option={'epoch': e})
+        else:
+            model = torchglow.GlowWordEmbedding(checkpoint_path=opt.checkpoint_path)
 
-    results_fasttext, p_fasttext = test_analogy(False)
-    results_relative, _ = test_analogy(True, p_fasttext)
-    with open('./result.jsonl', 'w') as f:
-        for line in results_fasttext + results_relative:
-            f.write(json.dumps(line) + '\n')
-    logging.info('finish evaluation: result was exported to {}'.format('./result.jsonl'))
+        for i in DATA:
+            tmp_result = {'model_type': model.config.model_type, 'data': i, 'epoch': e, 'ckpt': opt.checkpoint_path}
+            val, test = get_dataset_raw(i)
+            all_pairs = list(chain(*[[o['stem'], o['choice']] for o in val + test]))
+            all_pairs_format = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
+            all_pairs_format = list(filter(lambda x: x in model.vocab(), all_pairs_format))
+            vector = model.embed(all_pairs_format, batch=opt.batch)
+            latent_dict = {k: v for k, v in zip(all_pairs_format, vector)}
+
+            def get_prediction(single_data):
+                stem = '__'.join(single_data['stem']).replace(' ', '_').lower()
+                choice = ['__'.join(c).replace(' ', '_').lower() for c in single_data['choice']]
+                if stem not in model.vocab():
+                    return None
+                sim = [cos_similarity(latent_dict[stem], latent_dict[c]) if c in latent_dict else -100 for c in choice]
+                pred = sim.index(max(sim))
+                if sim[pred] == -100:
+                    return None
+                return pred
+
+
+            for prefix, data in zip(['test', 'valid'], [test, val]):
+                prediction = [get_prediction(o) for o in data]
+                tmp_result['oov_{}'.format(prefix)] = len([p for p in prediction if p is None])
+                prediction = [p if p is not None else BASE_PREDICTION[data][prefix][n] for n, p in enumerate(prediction)]
+                accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
+                tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy)/len(accuracy)
+            tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
+                                      tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
+            result.append(tmp_result)
+    print(pd.DataFrame(result))
+    # pd.DataFrame(tmp_result).tocsv('./result.csv')
+    # logging.info('finish evaluation: result was exported to {}'.format('./result.jsonl'))

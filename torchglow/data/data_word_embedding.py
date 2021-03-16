@@ -20,7 +20,7 @@ __all__ = ('get_dataset_word_embedding', 'get_iterator_word_embedding', 'N_DIM')
 
 def get_dataset_word_embedding(model_type: str, cache_dir: str = None, validation_rate: float = 0.2):
     data_iterator = get_iterator_word_embedding(model_type, cache_dir)
-    data = data_iterator.model_vocab
+    data = list(data_iterator.model_vocab)
     random.Random(0).shuffle(data)
     n = int(len(data) * validation_rate)
 
@@ -42,7 +42,7 @@ def get_iterator_word_embedding(model_type: str, cache_dir: str = None):
 
     class DatasetWordEmbedding(torch.utils.data.Dataset):
         """ 1D data iterator with RELATIVE word embedding """
-        model_vocab = list(model.vocab.keys())
+        model_vocab = set(model.vocab.keys())
 
         def __init__(self, vocab):
             self.vocab = vocab
@@ -51,7 +51,12 @@ def get_iterator_word_embedding(model_type: str, cache_dir: str = None):
             return len(self.vocab)
 
         def __getitem__(self, idx):
+            # word = self.process(self.vocab[idx])
             tensor = torch.tensor(np.array(model[self.vocab[idx]]), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1),  # return in CHW shape
+
+        # @staticmethod
+        # def process(pair):
+        #     return pair.replace(' ', '_').lower()
 
     return DatasetWordEmbedding
