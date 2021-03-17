@@ -136,7 +136,7 @@ class BERT:
             data = list(map(EncodePlus(self.tokenizer, self.max_length, mode=self.mode), x))
         return Dataset(data)
 
-    def to_embedding(self, encode):
+    def to_embedding(self, encode, return_tensor: bool = True):
         """ Compute embedding from batch of encode. """
         encode = {k: v.to(self.device) for k, v in encode.items()}
         mask_position = encode.pop('mask_position').cpu().tolist()
@@ -145,7 +145,10 @@ class BERT:
         hidden_states = [output['hidden_states'][h] for h in self.embedding_layers]
         # get average over the specified layer: batch x length x h_n
         hidden_states = sum(hidden_states) / len(hidden_states)
-        return list(map(lambda y: y[0][y[1]], zip(hidden_states.cpu().tolist(), mask_position)))
+        embedding = list(map(lambda y: y[0][y[1]], zip(hidden_states.cpu().tolist(), mask_position)))
+        if return_tensor:
+            return torch.tensor(embedding)
+        return embedding
 
     def get_embedding(self, x: List, batch_size: int = None, num_worker: int = 0, parallel: bool = True):
         """ Get embedding from BERT.
@@ -166,12 +169,13 @@ class BERT:
         Embedding (len(word_pairs), n_hidden).
         """
         data = self.preprocess(x, parallel=parallel)
+        batch_size = len(x) if batch_size is None else batch_size
         data_loader = torch.utils.data.DataLoader(
             data, num_workers=num_worker, batch_size=batch_size, shuffle=False, drop_last=False)
 
         logging.debug('\t* run LM inference')
         h_list = []
         with torch.no_grad():
-            for encode, _ in data_loader:
-                h_list += self.to_embedding(encode)
+            for encode in data_loader:
+                h_list += self.to_embedding(encode, return_tensor=False)
         return h_list

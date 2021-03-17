@@ -259,9 +259,9 @@ class GlowBase(nn.Module):
         data_size = 0
         with torch.no_grad():
             for x in data_loader:
-                x = x.to(self.device)
                 if self.converter is not None:
                     x = self.converter(x)
+                x = x.to(self.device)
                 # forward: output prediction and get loss
                 if self.n_bins is not None:
                     # forward: output prediction and get loss, https://github.com/openai/glow/issues/43
