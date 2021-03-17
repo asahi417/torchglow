@@ -11,9 +11,9 @@ def get_options():
     parser.add_argument('--n-level', help='number of block', default=3, type=int)
     parser.add_argument('--n-bits-x', help='number of bits', default=8, type=int)
     # model parameter
+    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt/image', type=str)
     parser.add_argument('-s', '--training-step', help='training step in single epoch', default=50000, type=int)
     parser.add_argument('-e', '--epoch', help='training epochs', default=2000, type=int)
-    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt', type=str)
     parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
     parser.add_argument('--lr', help='learning rate', default=0.001, type=float)
     parser.add_argument('--image-size', help='image size', default=32, type=int)

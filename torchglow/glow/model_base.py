@@ -159,9 +159,9 @@ class GlowBase(nn.Module):
         data_reconstruct = []
         with torch.no_grad():
             for x in loader:
-                x = x.to(self.device)
                 if self.converter is not None:
                     x = self.converter(x)
+                x = x.to(self.device)
                 z, _ = self.model(x, return_loss=False)
                 y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
                 if decoder is not None:
@@ -197,9 +197,9 @@ class GlowBase(nn.Module):
         latent_variable = []
         with torch.no_grad():
             for x in data_loader:
-                x = x.to(self.device)
                 if self.converter is not None:
                     x = self.converter(x)
+                x = x.to(self.device)
                 z, _ = self.model(x, return_loss=False)
                 if flatten:  # reshape from CHW -> W
                     _, c, h, w = z.shape()
@@ -215,11 +215,12 @@ class GlowBase(nn.Module):
         data_size = 0
         for i in range(step_in_epoch):
             try:
-                x = next(data_loader).to(self.device)
+                x = next(data_loader)
             except StopIteration:
                 break
             if self.converter is not None:
                 x = self.converter(x)
+            x = x.to(self.device)
             # zero the parameter gradients
             self.optimizer.zero_grad()
             # forward: output prediction and get loss

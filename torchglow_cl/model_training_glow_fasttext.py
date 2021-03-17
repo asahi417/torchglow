@@ -11,9 +11,9 @@ def get_options():
                         default='fasttext_diff', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.2, type=float)
     # model parameter
+    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt/fasttext', type=str)
     parser.add_argument('-s', '--training-step', help='training step in single epoch', default=950000, type=int)
     parser.add_argument('-e', '--epoch', help='training epochs', default=30, type=int)
-    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt', type=str)
     parser.add_argument('-b', '--batch', help='batch size', default=16384, type=int)
     parser.add_argument('--lr', help='learning rate', default=0.00001, type=float)
     parser.add_argument('--batch-init', help='number of batch for data_iterator dependent initialization', default=16384, type=int)
