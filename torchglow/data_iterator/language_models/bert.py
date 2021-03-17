@@ -117,7 +117,7 @@ class BERT:
         x : list
             List of word pairs (`relative` mode) or sentences (`cls` mode).
         parallel : bool
-            Parallelize data_iterator processing part over CPUs.
+            Parallelize data processing part over CPUs.
 
         Returns
         -------
@@ -126,7 +126,7 @@ class BERT:
             x = [x] if type(x[0]) is str else x
         elif self.mode == 'cls':
             x = [x] if type(x) is str else x
-        logging.debug('{} data to get embedding'.format(len(x)))
+        logging.debug('{} data to encode'.format(len(x)))
         if parallel:
             pool = Pool()
             data = pool.map(EncodePlus(self.tokenizer, self.max_length, mode=self.mode), x)
@@ -162,7 +162,7 @@ class BERT:
         num_worker : int
             Dataset worker number.
         parallel : boo;
-            Parallelize data_iterator processing part over CPUs.
+            Parallelize data processing part over CPUs.
 
         Returns
         -------

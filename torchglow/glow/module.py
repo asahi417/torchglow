@@ -300,7 +300,7 @@ class Split(nn.Module):
         x : torch.Tensor
             Input tensor, to split (forward) or concatenate with z or sampled variable (reverse)
         reverse : bool
-            Switch to reverse mode to sample data_iterator from latent variable.
+            Switch to reverse mode to sample data from latent variable.
         z : torch.Tensor
             Latent state, to concatenate with x in reverse mode, which is None as the default to
             generate latent state by sampling from the learnt distribution by x.
@@ -443,13 +443,13 @@ class GlowNetwork(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor, which can be left as None to generate random sample from learnt posterior
+            Input tensor (batch, n_channel, height, width), which can be left as None to generate random sample from learnt posterior
             for reverse mode.
         reverse : bool
-            Switch to reverse mode to sample data_iterator from latent variable.
+            Switch to reverse mode to sample data from latent variable.
         latent_states: List
-            Latent variable to generate data_iterator, which is None as default for random sampling, otherwise
-            generate data_iterator conditioned by the given latent variable. This should be the output from the forward
+            Latent variable to generate data, which is None as default for random sampling, otherwise
+            generate data conditioned by the given latent variable. This should be the output from the forward
             inference.
         sample_size : int
             Sampling size for random generation in reverse mode.
@@ -462,13 +462,13 @@ class GlowNetwork(nn.Module):
         -------
         output :
             (forward mode) List containing latent variables of x
-            (reverse mode) torch.Tensor of the generated data_iterator
+            (reverse mode) torch.Tensor (batch, n_channel, height, width) of the generated data
         nll : negative log likelihood
         """
         if reverse:
 
             if x is None:
-                # seed variables for sampling data_iterator
+                # seed variables for sampling data
                 x = torch.zeros([sample_size] + self.last_latent_shape)
 
             for layer in reversed(self.layers):
@@ -544,7 +544,6 @@ class GlowNetwork1D(nn.Module):
             self.layers.append(FlowStep(in_channels=self.n_channel, **flow_config))
         self.layers.append(Split(
             in_channels=self.n_channel, split=False, stride=1, kernel_size=1, unit_gaussian=unit_gaussian))
-        self.last_latent_shape = [self.n_channel, 1, 1]
 
     def forward(self,
                 x: torch.Tensor = None,
@@ -559,13 +558,13 @@ class GlowNetwork1D(nn.Module):
         Parameters
         ----------
         x : torch.Tensor
-            Input tensor, which can be left as None to generate random sample from learnt posterior
+            Input tensor (batch, n_channel), which can be left as None to generate random sample from learnt posterior
             for reverse mode.
         reverse : bool
-            Switch to reverse mode to sample data_iterator from latent variable.
-        latent_states: List
-            Latent variable to generate data_iterator, which is None as default for random sampling, otherwise
-            generate data_iterator conditioned by the given latent variable. This should be the output from the forward
+            Switch to reverse mode to sample data from latent variable.
+        latent_states: torch.Tensor
+            Latent variable to generate data, which is None as default for random sampling, otherwise
+            generate data conditioned by the given latent variable. This should be the output from the forward
             inference.
         sample_size : int
             Sampling size for random generation in reverse mode.
@@ -577,23 +576,25 @@ class GlowNetwork1D(nn.Module):
         Returns
         -------
         output :
-            (forward mode) List containing latent variables of x
-            (reverse mode) torch.Tensor of the generated data_iterator
+            (forward mode) torch.Tensor (batch, n_channel) that is the transformed latent variables of input tensor
+            (reverse mode) torch.Tensor (batch, n_channel) of the generated data
         nll : negative log likelihood
         """
         if reverse:
             if x is None:
-                # seed variables for sampling data_iterator
-                x = torch.zeros([sample_size] + self.last_latent_shape)
+                # seed variables for sampling data
+                x = torch.zeros([sample_size] + [self.n_channel, 1, 1])
 
             for layer in reversed(self.layers):
                 if isinstance(layer, Split):
                     x, _ = layer(x, reverse=True, eps_std=eps_std, z=latent_states)
                 else:
                     x, _ = layer(x, reverse=True)
+            x = x.reshape(len(x), -1)  # flatten CHW to 1D array
             return x, None
         else:
             assert x is not None, '`x` have to be a tensor, not None'
+            x = x.reshape(len(x), 1, 1, 1)  # convert to CHW shape
             log_det = 0 if return_loss else None
             for layer in self.layers:
                 if isinstance(layer, FlowStep):
@@ -601,5 +602,6 @@ class GlowNetwork1D(nn.Module):
                 else:
                     x, log_det = layer(x, log_det=log_det)
             (_, z) = x
+            z = z.reshape(len(z), -1)  # flatten CHW to 1D array
             nll = None if log_det is None else - log_det
             return z, nll

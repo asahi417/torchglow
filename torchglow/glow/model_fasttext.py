@@ -57,7 +57,7 @@ class GlowFasttext(GlowBase):
         lr : float
             Learning rate.
         batch_init : int
-            The number of batch for data_iterator-dependent initialization.
+            The number of batch for data-dependent initialization.
         filter_size : int
             CNN filter size.
         n_flow_step : int
@@ -116,7 +116,7 @@ class GlowFasttext(GlowBase):
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        logging.info('1D Glow model: {}M parameters'.format(round(model_size/10**6, 4)))
+        logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
 
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
@@ -147,7 +147,7 @@ class GlowFasttext(GlowBase):
     def embed(self, data: List, batch: int = None, flatten: bool = True):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        return self.embed_base(self.data_iterator(data), batch, flatten=flatten)
+        return self.embed_base(self.data_iterator(data), batch)
 
     def vocab(self):
         return self.data_iterator.model_vocab

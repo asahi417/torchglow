@@ -58,10 +58,10 @@ class GlowBase(nn.Module):
         logging.debug('setting up optimizer')
         self.setup_optimizer(fp16=fp16)
 
-        logging.debug('loading data_iterator iterator')
+        logging.debug('loading data iterator')
         data_train, data_valid = self.setup_data()
         if self.config.epoch_elapsed == 0:
-            logging.debug('data_iterator-dependent initialization')
+            logging.debug('data-dependent initialization')
             loader = torch.utils.data.DataLoader(
                 data_train, batch_size=self.config.batch_init, shuffle=True)
             self.data_dependent_initialization(loader)
@@ -177,26 +177,24 @@ class GlowBase(nn.Module):
                     break
         return data_original[:sample_size], data_reconstruct[:sample_size]
 
-    def embed_base(self, data_iterator, batch: int = None, flatten: bool = True):
-        """ Embed data_iterator into latent space.
+    def embed_base(self, data, batch: int = None):
+        """ Embed data into latent space.
 
         Parameters
         ----------
-        data_iterator : list
+        data : list
             Data iterator.
         batch : int
             Batch size.
-        flatten : bool
-            Reduce the dimension of the embedding to be 1-dim.
 
         Returns
         -------
-        A list of 1-dim embedding from the given data_iterator, in which the n_dim depends on underlying embedding model.
+        A list of 1-dim embedding from the given data, in which the n_dim depends on underlying embedding model.
         """
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
         batch = batch if batch is not None else self.config.batch
-        data_loader = torch.utils.data.DataLoader(self.data_iterator(data_iterator), batch_size=batch)
+        data_loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
         latent_variable = []
         with torch.no_grad():
             for x in data_loader:
@@ -204,10 +202,10 @@ class GlowBase(nn.Module):
                     x = self.converter(x)
                 x = x.to(self.device)
                 z, _ = self.model(x, return_loss=False)
-                if flatten:  # reshape from CHW -> W
-                    _, c, h, w = z.shape()
-                    z = z.reshape(-1, c * h * w)
-                latent_variable += z.cpu().tolist()
+                if type(z) is list:  # for multi-scale latent variables used in image model
+                    latent_variable += [z_.cpu().tolist() for z_ in z]
+                else:
+                    latent_variable += z.cpu().tolist()
         return latent_variable
 
     def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):

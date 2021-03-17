@@ -56,7 +56,7 @@ class GlowBERT(GlowBase):
         lr : float
             Learning rate.
         batch_init : int
-            The number of batch for data_iterator-dependent initialization.
+            The number of batch for bpd-dependent initialization.
         filter_size : int
             CNN filter size.
         n_flow_step : int
@@ -124,7 +124,7 @@ class GlowBERT(GlowBase):
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        logging.info('1D Glow model: {}M parameters'.format(round(model_size/10**6, 4)))
+        logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
 
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
@@ -147,7 +147,7 @@ class GlowBERT(GlowBase):
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
 
-    def embed(self, data: List, batch: int = None, flatten: bool = True):
+    def embed(self, data: List, batch: int = None):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        return self.embed_base(self.data_iterator(data), batch, flatten=flatten)
+        return self.embed_base(self.data_iterator(data), batch)

@@ -163,7 +163,7 @@ def get_image_decoder(n_bits_x: int = 8):
         """ decoder to recover image from tensor """
 
         def single_img(v_):
-            v_ = v_.transpose(1, 2, 0)
+            v_ = v_.transpose(1, 2, 0)  # CHW -> HWC
             img = (((v_ + .5) * n_bins).round(0) * (256 / n_bins)).clip(0, 255).astype('uint8')
             if pil:
                 img = Image.fromarray(img, 'RGB')

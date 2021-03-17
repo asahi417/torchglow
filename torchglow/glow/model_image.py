@@ -15,7 +15,7 @@ __all__ = 'Glow'
 
 
 class Glow(GlowBase):
-    """ Glow for 2D image data_iterator """
+    """ Glow for 2D image data """
 
     def __init__(self,
                  training_step: int = 50000,
@@ -41,7 +41,7 @@ class Glow(GlowBase):
                  checkpoint_path: str = None,
                  unit_gaussian: bool = False,
                  cache_dir: str = None):
-        """ Glow for 2D image data_iterator
+        """ Glow for 2D image data
 
         Parameters
         ----------
@@ -60,7 +60,7 @@ class Glow(GlowBase):
         image_size : int
             Image resolution.
         batch_init : int
-            The number of batch for data_iterator-dependent initialization.
+            The number of batch for data-dependent initialization.
         filter_size : int
             CNN filter size.
         n_flow_step : int
@@ -124,7 +124,7 @@ class Glow(GlowBase):
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        logging.info('Glow model: {}M parameters'.format(round(model_size/10**6, 4)))
+        logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
 
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
