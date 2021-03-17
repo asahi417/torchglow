@@ -594,7 +594,7 @@ class GlowNetwork1D(nn.Module):
             return x, None
         else:
             assert x is not None, '`x` have to be a tensor, not None'
-            x = x.reshape(len(x), 1, 1, 1)  # convert to CHW shape
+            x = x.reshape(len(x), -1, 1, 1)  # convert to CHW shape
             log_det = 0 if return_loss else None
             for layer in self.layers:
                 if isinstance(layer, FlowStep):
