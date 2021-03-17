@@ -145,8 +145,11 @@ class GlowBase(nn.Module):
     def data_dependent_initialization(self, data_loader):
         with torch.no_grad():
             loader = iter(data_loader)
-            data = next(loader).to(self.device)
-            self.model(data, return_loss=False, initialize_actnorm=True)
+            x = next(loader)
+            if self.converter is not None:
+                x = self.converter(x)
+            x = x.to(self.device)
+            self.model(x, return_loss=False, initialize_actnorm=True)
 
     def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
         """ Reconstruct validation data_iterator """
