@@ -62,7 +62,7 @@ class Dataset(torch.utils.data.Dataset):
         return torch.tensor(data, dtype=torch.long)
 
     def __getitem__(self, idx):
-        return {k: self.to_tensor(k, v) for k, v in self.data[idx].items()}
+        return {k: self.to_tensor(k, v) for k, v in self.data[idx].items()}, 
 
 
 class BERT:
@@ -172,6 +172,6 @@ class BERT:
         logging.debug('\t* run LM inference')
         h_list = []
         with torch.no_grad():
-            for encode in data_loader:
+            for encode, _ in data_loader:
                 h_list += self.to_embedding(encode)
         return h_list
