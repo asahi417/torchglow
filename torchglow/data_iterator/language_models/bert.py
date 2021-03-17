@@ -100,7 +100,6 @@ class BERT:
         self.num_hidden_layers = self.config.num_hidden_layers
         self.max_length = max_length
 
-        logging.debug('loading language model')
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_name, cache_dir=self.cache_dir)
         self.model = transformers.AutoModelForMaskedLM.from_pretrained(
             self.model_name, config=self.config, cache_dir=self.cache_dir)
@@ -108,7 +107,7 @@ class BERT:
         # GPU setup
         self.device = 'cuda' if torch.cuda.device_count() > 0 else 'cpu'
         self.model.to(self.device)
-        logging.debug('BERT running on {} GPU'.format(torch.cuda.device_count()))
+        logging.info('BERT running on {} GPU'.format(torch.cuda.device_count()))
 
     def preprocess(self, x: List, parallel: bool = True):
         """ Preprocess textual data.
