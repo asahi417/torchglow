@@ -47,7 +47,7 @@ def get_dataset_word_pairs(data_iterator,
     n = int(len(data) * validation_rate)
     random.Random(0).shuffle(data)
 
-    assert data_format in ['pair', 'word'], data_format
+    assert data_format is None or data_format in ['pair', 'word'], data_format
     if data_format == 'pair':
         # convert word pair to pair-format of relative embeddings
         data = ['__'.join([a.lower(), b.lower()]) for a, b in data]
