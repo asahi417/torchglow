@@ -6,7 +6,7 @@ import torch
 from .model_base import GlowBase
 from .module import GlowNetwork1D
 from ..config import Config
-from ..data.data_word_embedding import get_dataset_word_embedding, get_iterator_word_embedding, N_DIM
+from ..data.data_fasttext import get_dataset_word_embedding, get_iterator_word_embedding, N_DIM
 from ..util import fix_seed
 
 __all__ = 'GlowWordEmbedding'
@@ -36,7 +36,8 @@ class GlowWordEmbedding(GlowBase):
                  momentum: float = 0.9,
                  checkpoint_path: str = None,
                  checkpoint_option: Dict = None,
-                 unit_gaussian: bool = False):
+                 unit_gaussian: bool = False,
+                 cache_dir: str = None):
         """ Glow on 1D Word Embeddings
 
         Parameters
@@ -78,6 +79,7 @@ class GlowWordEmbedding(GlowBase):
         """
         super(GlowWordEmbedding, self).__init__()
         fix_seed(random_seed)
+        self.cache_dir = cache_dir
         # config
         self.config = Config(
             model_type=model_type,
@@ -112,10 +114,6 @@ class GlowWordEmbedding(GlowBase):
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
-        # for p in self.model.parameters():
-        #     if p.requires_grad:
-        #         print(p.numel(), p.shape)
-        # input(model_size)
         logging.info('1D Glow model: {}M parameters'.format(round(model_size/10**6, 4)))
 
         if self.config.is_trained:
@@ -128,16 +126,16 @@ class GlowWordEmbedding(GlowBase):
 
         # model on gpu
         self.model.to(self.device)
-        logging.info('running on {} GPUs'.format(self.n_gpu))
+        logging.info('GlowWordEmbedding running on {} GPUs'.format(self.n_gpu))
 
         self.checkpoint_dir = self.config.cache_dir
         self.data_iterator = None
 
-    def setup_data(self, cache_dir, return_iterator: bool = False):
+    def setup_data(self, return_iterator: bool = False):
         if return_iterator:
-            return get_iterator_word_embedding(self.config.model_type, cache_dir=cache_dir)
+            return get_iterator_word_embedding(self.config.model_type, cache_dir=self.cache_dir)
         return get_dataset_word_embedding(
-            self.config.model_type, validation_rate=self.config.validation_rate, cache_dir=cache_dir)
+            self.config.model_type, validation_rate=self.config.validation_rate, cache_dir=self.cache_dir)
 
     def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
         self.model.train()
@@ -192,28 +190,11 @@ class GlowWordEmbedding(GlowBase):
         writer.add_scalar('valid/bpd', bpd, epoch_n)
         return bpd
 
-    def reconstruct(self, sample_size: int = 5, cache_dir: str = None, batch: int = 5):
-        """ Reconstruct validation embedding by Glow """
-        assert self.config.is_trained, 'model is not trained'
-        self.model.eval()
-        data_train, data_valid = self.setup_data(cache_dir)
-        if data_valid is None:
-            data_valid = data_train
-        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
-        embedding_original = []
-        embedding_reconstruct = []
-        with torch.no_grad():
-            for data in loader:
-                z, _ = self.model(data[0].to(self.device), return_loss=False)
-                y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
-                embedding_original += data[0].cpu().tolist()
-                embedding_reconstruct += y.cpu().tolist()
+    def reconstruct(self, sample_size: int = 5, batch: int = 5):
+        """ Reconstruct embedding. """
+        return self.reconstruct_base(sample_size, batch)
 
-                if len(embedding_reconstruct) > sample_size:
-                    break
-        return embedding_original[:sample_size], embedding_reconstruct[:sample_size]
-
-    def embed(self, data: List, batch: int = None, cache_dir: str = None):
+    def embed(self, data: List, batch: int = None, flatten: bool = True):
         """ Embed data into latent space with Glow.
 
         Parameters
@@ -222,8 +203,8 @@ class GlowWordEmbedding(GlowBase):
             A list of words to get the embeddings.
         batch : int
             Batch size.
-        cache_dir : str
-            Directory for cache the datasets.
+        flatten : bool
+            Reduce the dimension of the embedding to be 1-dim.
 
         Returns
         -------
@@ -232,17 +213,8 @@ class GlowWordEmbedding(GlowBase):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
         if self.data_iterator is None:
-            self.data_iterator = self.setup_data(cache_dir, return_iterator=True)
-        batch = batch if batch is not None else self.config.batch
-        loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
-        latent_variable = []
-        with torch.no_grad():
-            for data in loader:
-                z, _ = self.model(data[0].to(self.device), return_loss=False)
-                # reshape from CHW -> W
-                z = z.reshape(-1, N_DIM[self.config.model_type])
-                latent_variable += z.cpu().tolist()
-        return latent_variable
+            self.data_iterator = self.setup_data(return_iterator=True)
+        return self.embed_base(self.data_iterator(data), batch, flatten=flatten)
 
     def vocab(self, cache_dir: str = None):
         if self.data_iterator is None:

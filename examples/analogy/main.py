@@ -26,7 +26,7 @@ def get_dataset_raw(data_name: str):
     """ Get SAT-type dataset: a list of (answer: int, prompts: list, stem: list, choice: list)"""
     cache_dir = './cache'
     root_url_analogy = 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0'
-    assert data_name in DATA, 'unknown data: {}'.format(data_name)
+    assert data_name in DATA, 'unknown data_iterator: {}'.format(data_name)
     if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
         torchglow.util.open_compressed_file('{}/{}.zip'.format(root_url_analogy, data_name), cache_dir)
     with open('{}/{}/test.jsonl'.format(cache_dir, data_name), 'r') as f:
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     result = []
     # add fasttext baseline
     for i in DATA:
-        tmp_result = {'model_type': 'fasttext_baseline', 'n_flow_step': None, 'data': i,
+        tmp_result = {'model_type': 'fasttext_baseline', 'n_flow_step': None, 'data_iterator': i,
                       'epoch': None, 'unit_gaussian': None}
         val, test = get_dataset_raw(i)
         for prefix, data in zip(['test', 'valid'], [test, val]):
@@ -83,7 +83,7 @@ if __name__ == '__main__':
                 e = model.config.epoch_elapsed
 
             for i in DATA:
-                tmp_result = {'model_type': model.config.model_type, 'n_flow_step': model.config.n_flow_step, 'data': i,
+                tmp_result = {'model_type': model.config.model_type, 'n_flow_step': model.config.n_flow_step, 'data_iterator': i,
                               'epoch': e, 'unit_gaussian': model.config.unit_gaussian}
                 val, test = get_dataset_raw(i)
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in val + test]))

@@ -1,2 +1,2 @@
 from .data_image import get_dataset_image, get_image_decoder
-from .data_word_embedding import get_dataset_word_embedding
+from .data_fasttext import get_dataset_word_embedding
