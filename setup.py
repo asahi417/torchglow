@@ -45,8 +45,8 @@ setup(
     entry_points={
         'console_scripts': [
             'torchglow-train-image = torchglow_cl.model_training_glow:main',
-            'torchglow-train-fasttext = torchglow_cl.model_training_glow_bert:main',
-            'torchglow-train-bert = torchglow_cl.model_training_glow_fasttext:main'
+            'torchglow-train-bert = torchglow_cl.model_training_glow_bert:main',
+            'torchglow-train-fasttext = torchglow_cl.model_training_glow_fasttext:main'
         ]
     }
 )
