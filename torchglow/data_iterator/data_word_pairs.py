@@ -40,7 +40,7 @@ def get_dataset_word_pairs(data_iterator,
     (iterator_train, iterator_valid)
     """
     # download common-word-pairs data_iterator
-    path_data = '{}/common_word_pairs.pkl'
+    path_data = '{}/common_word_pairs.pkl'.format(CACHE_DIR)
     if not os.path.exists(path_data):
         open_compressed_file(COMMON_WORD_PAIRS_URL, CACHE_DIR)
     data = load_pickle(path_data)
