@@ -80,10 +80,10 @@ def get_iterator_bert(model: str, max_length: int = 32, embedding_layers: List =
 
     Returns
     -------
-    (torch.utils.data.Dataset, hidden dimension)
+    ((torch.utils.data.Dataset, a function to map the encoded input to BERT embedding) hidden dimension)
     """
     lm = BERT(model=model, max_length=max_length, embedding_layers=embedding_layers, mode=mode)
-    return lm.preprocess, lm.hidden_size
+    return (lm.preprocess, lm.to_embedding), lm.hidden_size
 
 
 def get_iterator_fasttext(model_type: str):
@@ -133,6 +133,6 @@ def get_iterator_fasttext(model_type: str):
 
         def __getitem__(self, idx):
             tensor = torch.tensor(np.array(model.wv.__getitem__(self.vocab[idx]), dtype=torch.float32))
-            return tensor.reshape(len(tensor), 1, 1),  # return in CHW shape
+            return tensor.reshape(len(tensor), 1, 1)  # return in CHW shape
 
     return Dataset, model.vector_size

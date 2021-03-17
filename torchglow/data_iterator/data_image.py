@@ -99,7 +99,8 @@ class Dataset(torch.utils.data.Dataset):
         img = (img / 2 ** (8 - self.n_bits_x)).round() / (2. ** self.n_bits_x)
         # apply transformation
         img = self.transform(img)
-        return img, single_data['label'][0]
+        return img
+        # return img, single_data['label'][0]
 
 
 def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size: int = None):

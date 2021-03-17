@@ -110,7 +110,9 @@ class GlowBERT(GlowBase):
             mode = 'mask'
         else:
             raise ValueError('unknown dataset: {}'.format(data))
-        self.data_iterator, self.hidden_size = get_iterator_bert(lm_model, lm_max_length, lm_embedding_layers, mode=mode)
+        # self.data_iterator to encode input, and self.converter to embed the encoded input to BERT embedding
+        (self.data_iterator, self.converter), self.hidden_size = get_iterator_bert(
+            lm_model, lm_max_length, lm_embedding_layers, mode=mode)
         # model
         self.model = GlowNetwork1D(
             n_channel=self.hidden_size,

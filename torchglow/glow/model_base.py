@@ -23,7 +23,8 @@ class GlowBase(nn.Module):
         self.n_gpu = torch.cuda.device_count()
         self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
         self.model = None
-        self.n_bins = None
+        self.n_bins = None  # for image input
+        self.converter = None  # for preprocessing such as BERT embedding
 
     def train(self,
               batch_valid: int = 32,
@@ -144,9 +145,8 @@ class GlowBase(nn.Module):
     def data_dependent_initialization(self, data_loader):
         with torch.no_grad():
             loader = iter(data_loader)
-            data = next(loader)
-            x = data[0].to(self.device)
-            self.model(x, return_loss=False, initialize_actnorm=True)
+            data = next(loader).to(self.device)
+            self.model(data, return_loss=False, initialize_actnorm=True)
 
     def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
         """ Reconstruct validation data_iterator """
@@ -158,9 +158,11 @@ class GlowBase(nn.Module):
         data_original = []
         data_reconstruct = []
         with torch.no_grad():
-            for data in loader:
-                x = data[0]
-                z, _ = self.model(x.to(self.device), return_loss=False)
+            for x in loader:
+                x = x.to(self.device)
+                if self.converter is not None:
+                    x = self.converter(x)
+                z, _ = self.model(x, return_loss=False)
                 y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
                 if decoder is not None:
                     data_original += decoder(x)
@@ -194,8 +196,11 @@ class GlowBase(nn.Module):
         data_loader = torch.utils.data.DataLoader(self.data_iterator(data_iterator), batch_size=batch)
         latent_variable = []
         with torch.no_grad():
-            for data in data_loader:
-                z, _ = self.model(data[0].to(self.device), return_loss=False)
+            for x in data_loader:
+                x = x.to(self.device)
+                if self.converter is not None:
+                    x = self.converter(x)
+                z, _ = self.model(x, return_loss=False)
                 if flatten:  # reshape from CHW -> W
                     _, c, h, w = z.shape()
                     z = z.reshape(-1, c * h * w)
@@ -210,10 +215,11 @@ class GlowBase(nn.Module):
         data_size = 0
         for i in range(step_in_epoch):
             try:
-                data = next(data_loader)
-                x = data[0].to(self.device)
+                x = next(data_loader).to(self.device)
             except StopIteration:
                 break
+            if self.converter is not None:
+                x = self.converter(x)
             # zero the parameter gradients
             self.optimizer.zero_grad()
             # forward: output prediction and get loss
@@ -252,9 +258,10 @@ class GlowBase(nn.Module):
         total_bpd = 0
         data_size = 0
         with torch.no_grad():
-            for data in data_loader:
-                x = data[0].to(self.device)
-
+            for x in data_loader:
+                x = x.to(self.device)
+                if self.converter is not None:
+                    x = self.converter(x)
                 # forward: output prediction and get loss
                 if self.n_bins is not None:
                     # forward: output prediction and get loss, https://github.com/openai/glow/issues/43
