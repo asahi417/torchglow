@@ -7,7 +7,7 @@ import random
 
 import torch
 import numpy as np
-from torchglow.data import get_dataset_image, get_image_decoder, get_dataset_word_embedding
+from torchglow.data_iterator import get_dataset_image, get_image_decoder, get_dataset_word_embedding
 
 
 def fix_seed(seed=12):

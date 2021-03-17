@@ -12,7 +12,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 
 def open_compressed_file(url, cache_dir, filename: str = None):
-    """ wget and uncompress data """
+    """ wget and uncompress data_iterator """
     path = wget(url, cache_dir, filename=filename)
     if path.endswith('.tar.gz') or path.endswith('.tgz'):
         tar = tarfile.open(path, "r:gz")

@@ -12,7 +12,7 @@ from tfrecord.torch.dataset import TFRecordDataset
 
 from torchglow.util import open_compressed_file
 
-# The original processed data used in Glow paper
+# The original processed data_iterator used in Glow paper
 URLS = {'celeba': 'https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar'}
 CACHE_DIR = '{}/.cache/torchglow'.format(os.path.expanduser('~'))
 __all__ = ('get_dataset_image', 'get_image_decoder')
@@ -54,7 +54,7 @@ def create_index(tfrecord_dir: str):
 
 
 class Dataset(torch.utils.data.Dataset):
-    """ CelebA data iterator """
+    """ CelebA data_iterator iterator """
 
     def __init__(self,
                  tfrecord_dir: str,
@@ -94,7 +94,7 @@ class Dataset(torch.utils.data.Dataset):
         # load tfrecord
         dataset = TFRecordDataset(tfr_file, tfr_file.replace('tfrecords', 'index'))
         single_data = list(dataset)[n]
-        img = single_data['data'].reshape(single_data['shape']).astype('float32')
+        img = single_data['data_iterator'].reshape(single_data['shape']).astype('float32')
         # normalize image to [0, 1]
         img = (img / 2 ** (8 - self.n_bits_x)).round() / (2. ** self.n_bits_x)
         # apply transformation
@@ -103,14 +103,14 @@ class Dataset(torch.utils.data.Dataset):
 
 
 def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image_size: int = None):
-    """ Get dataset iterator.
+    """ Get image dataset iterator.
 
     Parameters
     ----------
     data : str
         Dataset either of `celeba` or `cifar10`.
     cache_dir : str
-        (optional) Root directory to store cached data files.
+        (optional) Root directory to store cached data_iterator files.
     n_bits_x : int
         (optional) Number of bits of image.
     image_size : int
@@ -118,10 +118,10 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
 
     Returns
     -------
-    train_set : torch.utils.data.Dataset
-        Iterator of training set for torch.utils.data.DataLoader.
-    valid_set : torch.utils.data.Dataset
-        Iterator of validation set for torch.utils.data.DataLoader.
+    train_set : torch.utils.data_iterator.Dataset
+        Iterator of training set for torch.utils.data_iterator.DataLoader.
+    valid_set : torch.utils.data_iterator.Dataset
+        Iterator of validation set for torch.utils.data_iterator.DataLoader.
     """
     cache_dir = CACHE_DIR if cache_dir is None else cache_dir
 
@@ -150,7 +150,7 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
         valid_set = Dataset(
             '{}/celeba-tfr/validation'.format(cache_dir), root=cache_dir, train=False, transform=t_valid)
     else:
-        raise ValueError('unknown data: {}'.format(data))
+        raise ValueError('unknown data_iterator: {}'.format(data))
     return train_set, valid_set
 
 

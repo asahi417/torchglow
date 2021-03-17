@@ -1,4 +1,4 @@
-""" Glow on 1D Word Embeddings """
+""" Glow on 1D Word Embeddings from Fasttext """
 import logging
 from typing import Dict, List
 import torch
@@ -6,13 +6,13 @@ import torch
 from .model_base import GlowBase
 from .module import GlowNetwork1D
 from ..config import Config
-from ..data.data_fasttext import get_dataset_word_embedding, get_iterator_word_embedding, N_DIM
+from ..data_iterator.data_word_pairs import get_dataset_word_pairs, get_iterator_fasttext
 from ..util import fix_seed
 
-__all__ = 'GlowWordEmbedding'
+__all__ = 'GlowFasttext'
 
 
-class GlowWordEmbedding(GlowBase):
+class GlowFasttext(GlowBase):
     """ Glow on 1D Word Embeddings """
 
     def __init__(self,
@@ -57,7 +57,7 @@ class GlowWordEmbedding(GlowBase):
         lr : float
             Learning rate.
         batch_init : int
-            The number of batch for data-dependent initialization.
+            The number of batch for data_iterator-dependent initialization.
         filter_size : int
             CNN filter size.
         n_flow_step : int
@@ -77,7 +77,7 @@ class GlowWordEmbedding(GlowBase):
         checkpoint_path : str
             Path to checkpoint to load trained weight.
         """
-        super(GlowWordEmbedding, self).__init__()
+        super(GlowFasttext, self).__init__()
         fix_seed(random_seed)
         self.cache_dir = cache_dir
         # config
@@ -103,9 +103,11 @@ class GlowWordEmbedding(GlowBase):
             momentum=momentum,
             unit_gaussian=unit_gaussian
         )
+        # get preprocessing module
+        self.data_iterator, self.hidden_size = get_iterator_fasttext(self.config.model_type)
         # model
         self.model = GlowNetwork1D(
-            n_channel=N_DIM[self.config.model_type],
+            n_channel=self.hidden_size,
             filter_size=self.config.filter_size,
             n_flow_step=self.config.n_flow_step,
             actnorm_scale=self.config.actnorm_scale,
@@ -126,97 +128,26 @@ class GlowWordEmbedding(GlowBase):
 
         # model on gpu
         self.model.to(self.device)
-        logging.info('GlowWordEmbedding running on {} GPUs'.format(self.n_gpu))
+        logging.info('GlowFasttext running on {} GPUs'.format(self.n_gpu))
 
         self.checkpoint_dir = self.config.cache_dir
-        self.data_iterator = None
 
-    def setup_data(self, return_iterator: bool = False):
-        if return_iterator:
-            return get_iterator_word_embedding(self.config.model_type, cache_dir=self.cache_dir)
-        return get_dataset_word_embedding(
-            self.config.model_type, validation_rate=self.config.validation_rate, cache_dir=self.cache_dir)
-
-    def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
-        self.model.train()
-        step_in_epoch = int(round(self.config.training_step / self.config.batch))
-        data_loader = iter(data_loader)
-        total_nll = 0
-        data_size = 0
-        for i in range(step_in_epoch):
-            try:
-                data = next(data_loader)
-            except StopIteration:
-                break
-            # zero the parameter gradients
-            self.optimizer.zero_grad()
-            # forward: output prediction and get loss
-            _, nll = self.model(data[0].to(self.device))
-            # backward: calculate gradient
-            self.scaler.scale(nll.mean()).backward()
-
-            inst_nll = nll.mean().cpu().item()
-            writer.add_scalar('train/bpd', inst_nll, i + epoch_n * step_in_epoch)
-
-            # update optimizer
-            inst_lr = self.optimizer.param_groups[0]['lr']
-            writer.add_scalar('train/learning_rate', inst_lr, i + epoch_n * step_in_epoch)
-
-            if i % progress_interval == 0:
-                logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
-                    epoch_n, self.config.epoch, i, step_in_epoch, round(inst_nll, 3), inst_lr))
-
-            # aggregate average nll over epoch
-            total_nll += nll.sum().cpu().item()
-            data_size += len(data[0])
-
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-
-        return total_nll / data_size
-
-    def valid_single_epoch(self, data_loader, epoch_n: int, writer):
-        self.model.eval()
-        total_nll = 0
-        data_size = 0
-        with torch.no_grad():
-            for data in data_loader:
-                _, nll = self.model(data[0].to(self.device))
-                total_nll += nll.sum().cpu().item()
-                data_size += len(data[0])
-
-        # bits per dimension
-        bpd = total_nll / data_size
-        writer.add_scalar('valid/bpd', bpd, epoch_n)
-        return bpd
+    def setup_data(self):
+        """ Initialize training dataset. """
+        if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+            return get_dataset_word_pairs(
+                self.data_iterator, validation_rate=self.config.validation_rate, data_format='pair')
+        else:
+            return get_dataset_word_pairs(
+                self.data_iterator, validation_rate=self.config.validation_rate, data_format='word')
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
-        """ Reconstruct embedding. """
         return self.reconstruct_base(sample_size, batch)
 
     def embed(self, data: List, batch: int = None, flatten: bool = True):
-        """ Embed data into latent space with Glow.
-
-        Parameters
-        ----------
-        data : list
-            A list of words to get the embeddings.
-        batch : int
-            Batch size.
-        flatten : bool
-            Reduce the dimension of the embedding to be 1-dim.
-
-        Returns
-        -------
-        A list of 1-dim embedding from the given data, in which the n_dim depends on underlying embedding model.
-        """
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        if self.data_iterator is None:
-            self.data_iterator = self.setup_data(return_iterator=True)
         return self.embed_base(self.data_iterator(data), batch, flatten=flatten)
 
-    def vocab(self, cache_dir: str = None):
-        if self.data_iterator is None:
-            self.data_iterator = self.setup_data(cache_dir, return_iterator=True)
+    def vocab(self):
         return self.data_iterator.model_vocab

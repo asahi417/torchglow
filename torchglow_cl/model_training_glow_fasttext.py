@@ -1,16 +1,16 @@
-""" Train Glow model on built-in dataset """
+""" Train GlowFasttext model. """
 import argparse
 import logging
 import torchglow
 
 
 def get_options():
-    parser = argparse.ArgumentParser(description='Train Glow model on built-in dataset.')
-    # model parameter
+    parser = argparse.ArgumentParser(description='Train GlowFasttext model.')
+    # fasttext model specific parameters
     parser.add_argument('-m', '--model-type', help='embedding model type (`relative`, `fasttext_diff`)',
                         default='fasttext_diff', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.2, type=float)
-
+    # model parameter
     parser.add_argument('-s', '--training-step', help='training step in single epoch', default=950000, type=int)
     parser.add_argument('-e', '--epoch', help='training epochs', default=30, type=int)
     parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt', type=str)
@@ -48,8 +48,7 @@ def main():
     level = logging.DEBUG if opt.debug else logging.INFO
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
 
-    # train model
-    trainer = torchglow.GlowWordEmbedding(
+    trainer = torchglow.GlowFasttext(
         model_type=opt.model_type,
         validation_rate=opt.validation_rate,
         training_step=opt.training_step,
@@ -69,11 +68,10 @@ def main():
         optimizer=opt.optimizer,
         momentum=opt.momentum,
         checkpoint_path=opt.checkpoint_path,
-        unit_gaussian=opt.unit_gaussian
-    )
+        unit_gaussian=opt.unit_gaussian,
+        cache_dir=opt.cache_dir)
     trainer.train(
         batch_valid=opt.batch_valid,
-        cache_dir=opt.cache_dir,
         num_workers=opt.num_workers,
         fp16=opt.fp16,
         progress_interval=opt.progress_interval,

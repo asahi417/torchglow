@@ -1,5 +1,7 @@
 """ Base Glow Class """
 import logging
+from math import log
+
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
@@ -20,10 +22,11 @@ class GlowBase(nn.Module):
         self.scaler = None
         self.n_gpu = torch.cuda.device_count()
         self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
+        self.model = None
+        self.n_bins = None
 
     def train(self,
               batch_valid: int = 32,
-              cache_dir: str = None,
               num_workers: int = 0,
               fp16: bool = False,
               progress_interval: int = 100,
@@ -35,8 +38,6 @@ class GlowBase(nn.Module):
         ----------
         batch_valid : int
             The size of batch for validation.
-        cache_dir : str
-            Directory for cache the datasets.
         num_workers : int
             Workers for DataLoader.
         fp16 : bool
@@ -56,10 +57,10 @@ class GlowBase(nn.Module):
         logging.debug('setting up optimizer')
         self.setup_optimizer(fp16=fp16)
 
-        logging.debug('loading data iterator')
-        data_train, data_valid = self.setup_data(cache_dir)
+        logging.debug('loading data_iterator iterator')
+        data_train, data_valid = self.setup_data()
         if self.config.epoch_elapsed == 0:
-            logging.debug('data-dependent initialization')
+            logging.debug('data_iterator-dependent initialization')
             loader = torch.utils.data.DataLoader(
                 data_train, batch_size=self.config.batch_init, shuffle=True)
             self.data_dependent_initialization(loader)
@@ -146,3 +147,126 @@ class GlowBase(nn.Module):
             data = next(loader)
             x = data[0].to(self.device)
             self.model(x, return_loss=False, initialize_actnorm=True)
+
+    def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
+        """ Reconstruct validation data_iterator """
+        assert self.config.is_trained, 'model is not trained'
+        data_train, data_valid = self.setup_data()
+        if data_valid is None:
+            data_valid = data_train
+        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
+        data_original = []
+        data_reconstruct = []
+        with torch.no_grad():
+            for data in loader:
+                x = data[0]
+                z, _ = self.model(x.to(self.device), return_loss=False)
+                y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
+                if decoder is not None:
+                    data_original += decoder(x)
+                    data_reconstruct += decoder(y)
+                else:
+                    data_original += x.cpu().tolist()
+                    data_reconstruct += y.cpu().tolist()
+                if len(data_original) > sample_size:
+                    break
+        return data_original[:sample_size], data_reconstruct[:sample_size]
+
+    def embed_base(self, data_iterator, batch: int = None, flatten: bool = True):
+        """ Embed data_iterator into latent space.
+
+        Parameters
+        ----------
+        data_iterator : list
+            Data iterator.
+        batch : int
+            Batch size.
+        flatten : bool
+            Reduce the dimension of the embedding to be 1-dim.
+
+        Returns
+        -------
+        A list of 1-dim embedding from the given data_iterator, in which the n_dim depends on underlying embedding model.
+        """
+        assert self.config.is_trained, 'model is not trained'
+        self.model.eval()
+        batch = batch if batch is not None else self.config.batch
+        data_loader = torch.utils.data.DataLoader(self.data_iterator(data_iterator), batch_size=batch)
+        latent_variable = []
+        with torch.no_grad():
+            for data in data_loader:
+                z, _ = self.model(data[0].to(self.device), return_loss=False)
+                if flatten:  # reshape from CHW -> W
+                    _, c, h, w = z.shape()
+                    z = z.reshape(-1, c * h * w)
+                latent_variable += z.cpu().tolist()
+        return latent_variable
+
+    def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
+        self.model.train()
+        step_in_epoch = int(round(self.config.training_step / self.config.batch))
+        data_loader = iter(data_loader)
+        total_bpd = 0
+        data_size = 0
+        for i in range(step_in_epoch):
+            try:
+                data = next(data_loader)
+                x = data[0].to(self.device)
+            except StopIteration:
+                break
+            # zero the parameter gradients
+            self.optimizer.zero_grad()
+            # forward: output prediction and get loss
+            if self.n_bins is not None:  # for training on image data
+                # forward: output prediction and get loss, https://github.com/openai/glow/issues/43
+                _, nll = self.model(x + torch.rand_like(x) / self.n_bins)
+                bpd = (nll + log(self.n_bins)) / log(2)
+            else:  # for training on other data
+                _, bpd = self.model(x)
+
+            # backward: calculate gradient
+            self.scaler.scale(bpd.mean()).backward()
+
+            inst_bpd = bpd.mean().cpu().item()
+            writer.add_scalar('train/bpd', inst_bpd, i + epoch_n * step_in_epoch)
+
+            # update optimizer
+            inst_lr = self.optimizer.param_groups[0]['lr']
+            writer.add_scalar('train/learning_rate', inst_lr, i + epoch_n * step_in_epoch)
+
+            if i % progress_interval == 0:
+                logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
+                    epoch_n, self.config.epoch, i, step_in_epoch, round(inst_bpd, 3), inst_lr))
+
+            # aggregate average bpd over epoch
+            total_bpd += bpd.sum().cpu().item()
+            data_size += len(x)
+
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+
+        return total_bpd / data_size
+
+    def valid_single_epoch(self, data_loader, epoch_n: int, writer):
+        self.model.eval()
+        total_bpd = 0
+        data_size = 0
+        with torch.no_grad():
+            for data in data_loader:
+                x = data[0].to(self.device)
+
+                # forward: output prediction and get loss
+                if self.n_bins is not None:
+                    # forward: output prediction and get loss, https://github.com/openai/glow/issues/43
+                    _, nll = self.model(x + torch.rand_like(x) / self.n_bins)
+                    bpd = (nll + log(self.n_bins)) / log(2)
+                else:  # for training on other data
+                    _, bpd = self.model(x)
+
+                total_bpd += bpd.sum().cpu().item()
+                data_size += len(x)
+
+        # bits per dimension
+        bpd = total_bpd / data_size
+        writer.add_scalar('valid/bpd', bpd, epoch_n)
+        return bpd

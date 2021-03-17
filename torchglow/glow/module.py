@@ -1,6 +1,8 @@
-""" Modules for Glow """
+""" Glow Models
+- `GlowNetwork`: For 2D input such as image.
+- `GlowNetwork1D`: For 1D input such as embedding from w2v or BERT
+"""
 from typing import List
-from math import log
 from scipy import linalg
 import torch
 import numpy as np
@@ -12,6 +14,7 @@ EPS = 1e-5
 
 
 def pixels(tensor: torch.Tensor):
+    """ Return pixel number """
     return int(tensor.size(2) * tensor.size(3))
 
 
@@ -143,7 +146,7 @@ class InvertibleConv2d(nn.Module):
 
 
 class ZeroConv2d(nn.Conv2d):
-    """ Zero initialized convolution for 2D """
+    """ Zero initialized convolution for 2D input. """
 
     def __init__(self,
                  in_channels: int,
@@ -168,7 +171,7 @@ class ZeroConv2d(nn.Conv2d):
 
 
 class AffineCoupling(nn.Module):
-    """ Affine coupling layer """
+    """ Affine coupling layer. """
 
     def __init__(self,
                  in_channels: int,
@@ -211,7 +214,7 @@ class AffineCoupling(nn.Module):
 
 
 class FlowStep(nn.Module):
-    """ One step of flow: input -> ActNorm -> Invertible Conv -> Affine Coupling -> output """
+    """ One step of flow: x -> ActNorm -> Invertible Convolution -> Affine Coupling -> y """
 
     def __init__(self,
                  in_channels: int,
@@ -240,6 +243,9 @@ class FlowStep(nn.Module):
 
 
 class Squeeze(nn.Module):
+    """ Squeeze module to divide the input image by a factor and concatenate on the channel dimension
+    Eg) 8 x 8 x 3 --> 4 x 4 x 12
+    """
 
     def __init__(self, factor: int = 2):
         super().__init__()
@@ -266,9 +272,9 @@ class Squeeze(nn.Module):
 
 class Split(nn.Module):
     """ Split input by channel dimension and compute log likelihood of Gaussian distribution with trainable parameters.
-    input -> [a, b]
-    a -> CNN -> [mean, log_sd]
-    b -> Gaussian_likelihood(b, mean, log_sd) -> log likelihood
+    Eg) x -> [a, b]
+        a -> CNN -> [mean, log_sd]
+        b -> Gaussian_likelihood(b, mean, log_sd) -> log likelihood
     * the reason to use learnt prior is described in https://github.com/openai/glow/issues/66
     """
     log2pi = float(np.log(2 * np.pi))
@@ -294,7 +300,7 @@ class Split(nn.Module):
         x : torch.Tensor
             Input tensor, to split (forward) or concatenate with z or sampled variable (reverse)
         reverse : bool
-            Switch to reverse mode to sample data from latent variable.
+            Switch to reverse mode to sample data_iterator from latent variable.
         z : torch.Tensor
             Latent state, to concatenate with x in reverse mode, which is None as the default to
             generate latent state by sampling from the learnt distribution by x.
@@ -348,9 +354,10 @@ class Split(nn.Module):
 
     def gaussian_log_likelihood(self, x, mean, log_sd):
         """ Gaussian log likelihood
-            lnL = -1/2 * { ln|Var| + ((X - Mu)^T)(Var^-1)(X - Mu) + kln(2*PI) }
-            k = 1 (Independent)
-            Var = logs ** 2 """
+        lnL = -1/2 * { ln|Var| + ((X - Mu)^T)(Var^-1)(X - Mu) + kln(2*PI) }
+        k = 1 (Independent)
+        Var = logs ** 2
+        """
         return -0.5 * self.log2pi - log_sd - 0.5 * (x - mean) ** 2 / torch.exp(2 * log_sd)
 
     @staticmethod
@@ -361,14 +368,13 @@ class Split(nn.Module):
 
 
 class GlowNetwork(nn.Module):
-    """ Glow network architecture
+    """ Glow network architecture for 2D image.
                      n_flow_step                           n_flow_step
-    --> [Squeeze] -> [FlowStep] -> [Split] -> [Squeeze] -> [FlowStep]
-           ^                           v
-           |       (n_level - 1)       |
-           + --------------------------+
+    x -> [Squeeze] -> [FlowStep] -> [Split] -> [Squeeze] -> [FlowStep] -> y
+           ^                          v
+           |       (n_level - 1)      |
+           +--------------------------+
     """
-
     def __init__(self,
                  image_shape: List,
                  filter_size: int = 512,
@@ -377,7 +383,8 @@ class GlowNetwork(nn.Module):
                  n_flow_step: int = 32,
                  n_level: int = 3,
                  actnorm_scale: float = 1.0,
-                 lu_decomposition: bool = False):
+                 lu_decomposition: bool = False,
+                 unit_gaussian: bool = False):
         """ Glow network architecture
 
         Parameters
@@ -417,7 +424,7 @@ class GlowNetwork(nn.Module):
 
             # 3. Split2d
             split = i != (self.n_level - 1)
-            self.layers.append(Split(in_channels=c, split=split))
+            self.layers.append(Split(in_channels=c, split=split, unit_gaussian=unit_gaussian))
             if split:
                 assert c % 2 == 0, c
                 c = c // 2
@@ -439,10 +446,10 @@ class GlowNetwork(nn.Module):
             Input tensor, which can be left as None to generate random sample from learnt posterior
             for reverse mode.
         reverse : bool
-            Switch to reverse mode to sample data from latent variable.
+            Switch to reverse mode to sample data_iterator from latent variable.
         latent_states: List
-            Latent variable to generate data, which is None as default for random sampling, otherwise
-            generate data conditioned by the given latent variable. This should be the output from the forward
+            Latent variable to generate data_iterator, which is None as default for random sampling, otherwise
+            generate data_iterator conditioned by the given latent variable. This should be the output from the forward
             inference.
         sample_size : int
             Sampling size for random generation in reverse mode.
@@ -455,13 +462,13 @@ class GlowNetwork(nn.Module):
         -------
         output :
             (forward mode) List containing latent variables of x
-            (reverse mode) torch.Tensor of the generated data
+            (reverse mode) torch.Tensor of the generated data_iterator
         nll : negative log likelihood
         """
         if reverse:
 
             if x is None:
-                # seed variables for sampling data
+                # seed variables for sampling data_iterator
                 x = torch.zeros([sample_size] + self.last_latent_shape)
 
             for layer in reversed(self.layers):
@@ -501,11 +508,11 @@ class GlowNetwork(nn.Module):
 
 
 class GlowNetwork1D(nn.Module):
-    """ Glow network architecture for 1d input """
+    """ Glow network architecture for 1D embedding vector. """
 
     def __init__(self,
                  n_channel: int,
-                 filter_size: int = 512,
+                 filter_size: int = 256,
                  n_flow_step: int = 10,
                  actnorm_scale: float = 1.0,
                  lu_decomposition: bool = False,
@@ -524,6 +531,8 @@ class GlowNetwork1D(nn.Module):
             Factor to scale ActNorm.
         lu_decomposition : bool
             Whether use LU decomposition in invertible CNN layer.
+        unit_gaussian : bool
+            Employ unit gaussian instead of learnt prior as the constrain.
         """
         super().__init__()
         self.layers = nn.ModuleList()
@@ -553,10 +562,10 @@ class GlowNetwork1D(nn.Module):
             Input tensor, which can be left as None to generate random sample from learnt posterior
             for reverse mode.
         reverse : bool
-            Switch to reverse mode to sample data from latent variable.
+            Switch to reverse mode to sample data_iterator from latent variable.
         latent_states: List
-            Latent variable to generate data, which is None as default for random sampling, otherwise
-            generate data conditioned by the given latent variable. This should be the output from the forward
+            Latent variable to generate data_iterator, which is None as default for random sampling, otherwise
+            generate data_iterator conditioned by the given latent variable. This should be the output from the forward
             inference.
         sample_size : int
             Sampling size for random generation in reverse mode.
@@ -569,12 +578,12 @@ class GlowNetwork1D(nn.Module):
         -------
         output :
             (forward mode) List containing latent variables of x
-            (reverse mode) torch.Tensor of the generated data
+            (reverse mode) torch.Tensor of the generated data_iterator
         nll : negative log likelihood
         """
         if reverse:
             if x is None:
-                # seed variables for sampling data
+                # seed variables for sampling data_iterator
                 x = torch.zeros([sample_size] + self.last_latent_shape)
 
             for layer in reversed(self.layers):

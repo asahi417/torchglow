@@ -37,13 +37,16 @@ setup(
         "tensorboard",
         "gdown",
         "gensim",
-        "pandas"
+        "pandas",
+        "transformers",
+        'numpy'
     ],
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
-            'torchglow-train-2d = torchglow_cl.model_training_image:main',
-            'torchglow-train-1d = torchglow_cl.model_training_word_embedding:main'
+            'torchglow-train-image = torchglow_cl.model_training_glow:main',
+            'torchglow-train-fasttext = torchglow_cl.model_training_glow_bert:main',
+            'torchglow-train-bert = torchglow_cl.model_training_glow_fasttext:main'
         ]
     }
 )
