@@ -138,17 +138,18 @@ class BERT:
 
     def to_embedding(self, encode, return_tensor: bool = True):
         """ Compute embedding from batch of encode. """
-        encode = {k: v.to(self.device) for k, v in encode.items()}
-        mask_position = encode.pop('mask_position').cpu().tolist()
-        output = self.model(**encode, return_dict=True)
-        # hidden state of masked token: layer x batch x length x h_n
-        hidden_states = [output['hidden_states'][h] for h in self.embedding_layers]
-        # get average over the specified layer: batch x length x h_n
-        hidden_states = sum(hidden_states) / len(hidden_states)
-        embedding = list(map(lambda y: y[0][y[1]], zip(hidden_states.cpu().tolist(), mask_position)))
-        if return_tensor:
-            return torch.tensor(embedding)
-        return embedding
+        with torch.no_grad():
+            encode = {k: v.to(self.device) for k, v in encode.items()}
+            mask_position = encode.pop('mask_position').cpu().tolist()
+            output = self.model(**encode, return_dict=True)
+            # hidden state of masked token: layer x batch x length x h_n
+            hidden_states = [output['hidden_states'][h] for h in self.embedding_layers]
+            # get average over the specified layer: batch x length x h_n
+            hidden_states = sum(hidden_states) / len(hidden_states)
+            embedding = list(map(lambda y: y[0][y[1]], zip(hidden_states.cpu().tolist(), mask_position)))
+            if return_tensor:
+                return torch.tensor(embedding)
+            return embedding
 
     def get_embedding(self, x: List, batch_size: int = None, num_worker: int = 0, parallel: bool = True):
         """ Get embedding from BERT.
@@ -175,7 +176,6 @@ class BERT:
 
         logging.debug('\t* run LM inference')
         h_list = []
-        with torch.no_grad():
-            for encode in data_loader:
-                h_list += self.to_embedding(encode, return_tensor=False)
+        for encode in data_loader:
+            h_list += self.to_embedding(encode, return_tensor=False)
         return h_list
