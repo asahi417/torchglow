@@ -36,7 +36,7 @@ setup(
         "tfrecord",
         "tensorboard",
         "gdown",
-        "gensim",
+        "gensim>=3.8.3",
         "pandas",
         "transformers",
         'numpy'

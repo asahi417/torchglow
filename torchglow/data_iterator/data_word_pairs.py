@@ -111,7 +111,7 @@ def get_iterator_fasttext(model_type: str):
         filename = 'concat_relative_fasttext_vectors.bin.tar.gz'
     else:
         filename = os.path.basename(url)
-    model_path_bin = '{}/{}'.format(CACHE_DIR, filename).replace('.tar.gz', '').replace('.zip', '')
+    model_path_bin = '{}/{}'.format(CACHE_DIR, filename).replace('.tar.gz', '').replace('.zip', '.bin')
     if not os.path.exists(model_path_bin):
         logging.debug('downloading word embedding model from {}'.format(url))
         open_compressed_file(url, CACHE_DIR, filename=filename)
