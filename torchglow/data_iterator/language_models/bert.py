@@ -68,6 +68,8 @@ class Dataset(torch.utils.data.Dataset):
 class BERT:
     """ Get embedding from transformers language model. """
 
+    vocab = None
+
     def __init__(self,
                  model: str,
                  max_length: int = 32,
