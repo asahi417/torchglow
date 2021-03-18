@@ -54,6 +54,9 @@ def get_dataset_word_pairs(data_iterator,
         # convert word pair to word-level data_iterator
         data = list(set(list(chain(*data))))
 
+    if data_iterator.model_vocab is not None:
+        data = list(filter(lambda x: x in data_iterator.model_vocab, data))
+
     if validation_rate == 0:
         return data_iterator(data, parallel=parallel), None
     n = int(len(data) * validation_rate)
