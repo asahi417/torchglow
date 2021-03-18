@@ -71,6 +71,11 @@ def main_bert():
     argument_parser = config(argument_parser)
     argument_parser = config_bert(argument_parser)
     opt = argument_parser.parse_args()
+
+    # logging
+    level = logging.DEBUG if opt.debug else logging.INFO
+    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
+
     trainer = torchglow.GlowBERT(
         lm_model=opt.lm_model,
         lm_max_length=opt.lm_max_length,
@@ -99,7 +104,7 @@ def main_bert():
     # add file handler
     logger = logging.getLogger()
     file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(level)
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
     logger.addHandler(file_handler)
 
@@ -149,7 +154,7 @@ def main_fasttext():
     # add file handler
     logger = logging.getLogger()
     file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(level)
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
     logger.addHandler(file_handler)
 
@@ -169,8 +174,11 @@ def main_image():
     argument_parser = config(argument_parser)
     argument_parser = config_image(argument_parser)
     opt = argument_parser.parse_args()
+
+    # logging
     level = logging.DEBUG if opt.debug else logging.INFO
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
+
     trainer = torchglow.Glow(
         training_step=opt.training_step,
         epoch=opt.epoch,
@@ -198,7 +206,7 @@ def main_image():
     # add file handler
     logger = logging.getLogger()
     file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(level)
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
     logger.addHandler(file_handler)
 
