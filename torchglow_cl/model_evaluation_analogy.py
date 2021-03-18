@@ -83,6 +83,8 @@ def main(model_type: str):
                         if model.data_format == 'word':
                             diff_s = diff(latent_dict[single_data['stem'][0]], latent_dict[single_data['stem'][1]])
                             diff_c = [diff(latent_dict[a], latent_dict[b]) for a, b in single_data['choice']]
+                            print(diff_s)
+                            print(diff_c)
                             sim = [cos_similarity(diff_s, c) for c in diff_c]
                         elif model.data_format == 'pair':
                             stem = torchglow.util.word_pair_format(single_data['stem'])
