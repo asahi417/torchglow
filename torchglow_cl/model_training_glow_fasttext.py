@@ -7,7 +7,8 @@ import torchglow
 def get_options():
     parser = argparse.ArgumentParser(description='Train GlowFasttext model.')
     # fasttext model specific parameters
-    parser.add_argument('-m', '--model-type', help='embedding model type (`relative`, `fasttext_diff`)',
+    parser.add_argument('-m', '--model-type', help='embedding model type (`relative`, `fasttext_diff`,'
+                                                   '`concat_relative_fasttext` `fasttext`, )',
                         default='fasttext_diff', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.2, type=float)
     # model parameter
