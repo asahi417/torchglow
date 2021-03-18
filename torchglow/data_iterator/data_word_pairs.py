@@ -44,7 +44,6 @@ def get_dataset_word_pairs(data_iterator,
     if not os.path.exists(path_data):
         open_compressed_file(COMMON_WORD_PAIRS_URL, CACHE_DIR)
     data = load_pickle(path_data)
-    n = int(len(data) * validation_rate)
     random.Random(0).shuffle(data)
 
     assert data_format is None or data_format in ['pair', 'word'], data_format
@@ -57,7 +56,7 @@ def get_dataset_word_pairs(data_iterator,
 
     if validation_rate == 0:
         return data_iterator(data, parallel=parallel), None
-
+    n = int(len(data) * validation_rate)
     valid_set = data_iterator(data[:n], parallel=parallel)
     train_set = data_iterator(data[n:], parallel=parallel)
     return train_set, valid_set
