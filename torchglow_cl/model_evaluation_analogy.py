@@ -15,6 +15,8 @@ def cos_similarity(a_, b_):
     inner = sum(list(map(lambda x: x[0] * x[1], zip(a_, b_))))
     norm_a = sum(list(map(lambda x: x * x, a_))) ** 0.5
     norm_b = sum(list(map(lambda x: x * x, b_))) ** 0.5
+    if norm_b * norm_a == 0:
+        return -100
     return inner / (norm_b * norm_a)
 
 
@@ -83,8 +85,6 @@ def main(model_type: str):
                         if model.data_format == 'word':
                             diff_s = diff(latent_dict[single_data['stem'][0]], latent_dict[single_data['stem'][1]])
                             diff_c = [diff(latent_dict[a], latent_dict[b]) for a, b in single_data['choice']]
-                            print(diff_s)
-                            print(diff_c)
                             sim = [cos_similarity(diff_s, c) for c in diff_c]
                         elif model.data_format == 'pair':
                             stem = torchglow.util.word_pair_format(single_data['stem'])
