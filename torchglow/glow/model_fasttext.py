@@ -131,6 +131,10 @@ class GlowFasttext(GlowBase):
         logging.info('GlowFasttext running on {} GPUs'.format(self.n_gpu))
 
         self.checkpoint_dir = self.config.cache_dir
+        if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+            self.data_format = 'pair'
+        else:
+            self.data_format = 'word'
 
     def setup_data(self):
         """ Initialize training dataset. """

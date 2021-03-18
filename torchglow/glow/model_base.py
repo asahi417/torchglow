@@ -25,6 +25,11 @@ class GlowBase(nn.Module):
         self.model = None
         self.n_bins = None  # for image input
         self.converter = None  # for preprocessing such as BERT embedding
+        self.data_format = None  # for fasttext data_format
+
+    @property
+    def parameter(self):
+        return self.config.config
 
     def train(self,
               batch_valid: int = 32,

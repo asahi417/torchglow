@@ -4,6 +4,7 @@ import pickle
 import tarfile
 import zipfile
 import requests
+import json
 
 import gdown
 import numpy as np
@@ -89,3 +90,31 @@ def save_pickle(_list, export_dir, chunk_size: int):
 def load_pickle(path):
     with open(path, "rb") as fp:
         return pickle.load(fp)
+
+
+def get_analogy_baseline(_type: str = 'fasttext_diff'):
+    """ Get prediction files for analogy dataset on the plain relative embedding for baseline. """
+    cache_dir = '{}/.cache/torchglow/analogy/baseline'.format(os.path.expanduser('~'))
+    os.makedirs(cache_dir, exist_ok=True)
+    assert _type in ['fasttext_diff', 'concat_relative_fasttext', 'relative_init'], _type
+    prediction_files = '{}/{}.json'.format(cache_dir, _type)
+    if not os.path.exists(prediction_files):
+        open_compressed_file(
+            url='https://raw.githubusercontent.com/asahi417/AnalogyDataset/master/predictions/{}.json'.format(_type),
+            cache_dir=cache_dir)
+    with open(prediction_files) as f:
+        return json.load(f)
+
+
+def get_analogy_dataset(data_name: str):
+    """ Get SAT-type dataset: a list of (answer: int, prompts: list, stem: list, choice: list)"""
+    cache_dir = '{}/.cache/torchglow/analogy/dataset'.format(os.path.expanduser('~'))
+    root_url_analogy = 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0'
+    assert data_name in ['sat', 'u2', 'u4', 'google', 'bats'], 'unknown data_iterator: {}'.format(data_name)
+    if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
+        open_compressed_file('{}/{}.zip'.format(root_url_analogy, data_name), cache_dir)
+    with open('{}/{}/test.jsonl'.format(cache_dir, data_name), 'r') as f:
+        test_set = list(filter(None, map(lambda x: json.loads(x) if len(x) > 0 else None, f.read().split('\n'))))
+    with open('{}/{}/valid.jsonl'.format(cache_dir, data_name), 'r') as f:
+        val_set = list(filter(None, map(lambda x: json.loads(x) if len(x) > 0 else None, f.read().split('\n'))))
+    return val_set, test_set
