@@ -153,5 +153,6 @@ class GlowFasttext(GlowBase):
         self.model.eval()
         return self.embed_base(data, batch)
 
+    @property
     def vocab(self):
         return self.data_iterator.model_vocab

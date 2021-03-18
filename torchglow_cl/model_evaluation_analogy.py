@@ -18,6 +18,11 @@ def cos_similarity(a_, b_):
     return inner / (norm_b * norm_a)
 
 
+def diff(list_a, list_b):
+    assert len(list_a) == len(list_b)
+    return list(map(lambda x: x[0] - x[1], zip(list_a, list_b)))
+
+
 def main(model_type: str):
     argument_parser = argparse.ArgumentParser(description='Model evaluation on analogy test.')
     argument_parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
@@ -52,8 +57,9 @@ def main(model_type: str):
                         return list(set(list(chain(*all_pairs))))
                     elif model.data_format == 'pair':
                         all_pairs = [torchglow.util.word_pair_format(d) for d in all_pairs]
-                        # all_pairs = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
-                        return list(filter(lambda x: x in model.vocab(), all_pairs))
+                        if model.vocab is not None:
+                            return list(filter(lambda x: x in model.vocab, all_pairs))
+                        return all_pairs
                     else:
                         raise ValueError('unknown data format: {}'.format(model.data_format))
                 elif model_type == 'bert':
@@ -75,15 +81,13 @@ def main(model_type: str):
                     """ OOV should only happen in `fasttext` of `pair` format. """
                     if model_type == 'fasttext':
                         if model.data_format == 'word':
-                            diff_s = latent_dict[single_data['stem'][0]] - latent_dict[single_data['stem'][1]]
-                            diff_c = [latent_dict[a] - latent_dict[b] for a, b in single_data['choice']]
+                            diff_s = diff(latent_dict[single_data['stem'][0]], latent_dict[single_data['stem'][1]])
+                            diff_c = [diff(latent_dict[a], latent_dict[b]) for a, b in single_data['choice']]
                             sim = [cos_similarity(diff_s, c) for c in diff_c]
                         elif model.data_format == 'pair':
                             stem = torchglow.util.word_pair_format(single_data['stem'])
-                            # stem = '__'.join(single_data['stem']).replace(' ', '_').lower()
-                            # choice = ['__'.join(c).replace(' ', '_').lower() for c in single_data['choice']]
                             choice = [torchglow.util.word_pair_format(d) for d in single_data['choice']]
-                            if stem not in model.vocab():
+                            if stem not in model.vocab:
                                 return None
                             sim = [cos_similarity(latent_dict[stem], latent_dict[c]) if c in latent_dict else -100
                                    for c in choice]
@@ -122,7 +126,9 @@ def main(model_type: str):
         for baseline in ['fasttext_diff', 'concat_relative_fasttext', 'relative_init']:
             base_prediction = torchglow.util.get_analogy_baseline(baseline)
             for i in DATA:
-                tmp_result = {k_: baseline for k_ in k}
+                tmp_result = {k_: None for k_ in k}
+                tmp_result['model_type'] = baseline
+                tmp_result['data'] = i
                 val, test = torchglow.util.get_analogy_dataset(i)
                 for prefix, data in zip(['test', 'valid'], [test, val]):
                     prediction = base_prediction[i][prefix]
