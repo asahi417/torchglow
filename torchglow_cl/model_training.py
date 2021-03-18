@@ -80,6 +80,7 @@ def main_bert():
         lm_model=opt.lm_model,
         lm_max_length=opt.lm_max_length,
         lm_embedding_layers=[int(i) for i in opt.lm_embedding_layers.split(',')],
+        validation_rate=opt.validation_rate,
         data=opt.data,
         training_step=opt.training_step,
         epoch=opt.epoch,
