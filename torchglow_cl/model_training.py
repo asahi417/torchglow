@@ -51,7 +51,7 @@ def config_bert(parser):
     parser.add_argument('--lm-max-length', help='length', default=32, type=int)
     parser.add_argument('--lm-embedding-layers', help='embedding layers in LM', default='-1,-2', type=str)
     parser.add_argument('--data', help='dataset', default='common_word_pairs', type=str)
-    parser.add_argument('--validation-rate', help='validation set ratio', default=0.2, type=float)
+    parser.add_argument('--validation-rate', help='validation set ratio', default=0.0, type=float)
     parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt/bert', type=str)
     return parser
 

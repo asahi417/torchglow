@@ -49,7 +49,7 @@ def get_dataset_word_pairs(data_iterator,
     assert data_format is None or data_format in ['pair', 'word'], data_format
     if data_format == 'pair':
         # convert word pair to pair-format of relative embeddings
-        data = ['__'.join([a.lower(), b.lower()]) for a, b in data]
+        data = ['__'.join([a.replace(' ', '_').lower(), b.replace(' ', '_').lower()]) for a, b in data]
     elif data_format == 'word':
         # convert word pair to word-level data_iterator
         data = list(set(list(chain(*data))))
