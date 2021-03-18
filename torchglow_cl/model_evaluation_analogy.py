@@ -1,6 +1,7 @@
 """ Solve analogy task by word embedding model """
 import logging
 import argparse
+import os
 from glob import glob
 from itertools import chain
 
@@ -141,6 +142,7 @@ def main(model_type: str):
                 result.append(tmp_result)
 
     df = pd.DataFrame(result)
+    os.makedirs(os.path.basename(opt.output_dir), exist_ok=True)
     df.to_csv(opt.output_dir)
 
 
