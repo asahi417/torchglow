@@ -10,7 +10,7 @@ import numpy as np
 from gensim.models import KeyedVectors, fasttext
 
 from .language_models import BERT
-from ..util import open_compressed_file, load_pickle
+from ..util import open_compressed_file, load_pickle, word_pair_format
 
 CACHE_DIR = '{}/.cache/torchglow/word_embedding'.format(os.path.expanduser('~'))
 COMMON_WORD_PAIRS_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word_pairs.pkl.tar.gz'
@@ -49,7 +49,7 @@ def get_dataset_word_pairs(data_iterator,
     assert data_format is None or data_format in ['pair', 'word'], data_format
     if data_format == 'pair':
         # convert word pair to pair-format of relative embeddings
-        data = ['__'.join([a.replace(' ', '_').lower(), b.replace(' ', '_').lower()]) for a, b in data]
+        data = [word_pair_format(d) for d in data]
     elif data_format == 'word':
         # convert word pair to word-level data_iterator
         data = list(set(list(chain(*data))))

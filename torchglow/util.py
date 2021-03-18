@@ -5,6 +5,7 @@ import tarfile
 import zipfile
 import requests
 import json
+from typing import List
 
 import gdown
 import numpy as np
@@ -118,3 +119,8 @@ def get_analogy_dataset(data_name: str):
     with open('{}/{}/valid.jsonl'.format(cache_dir, data_name), 'r') as f:
         val_set = list(filter(None, map(lambda x: json.loads(x) if len(x) > 0 else None, f.read().split('\n'))))
     return val_set, test_set
+
+
+def word_pair_format(pair: List):
+    """ transform word pair into the format of relative format """
+    return '__'.join(pair).replace(' ', '_').lower()

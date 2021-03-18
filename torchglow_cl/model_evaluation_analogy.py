@@ -51,7 +51,8 @@ def main(model_type: str):
                     if model.data_format == 'word':
                         return list(set(list(chain(*all_pairs))))
                     elif model.data_format == 'pair':
-                        all_pairs = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
+                        all_pairs = [torchglow.util.word_pair_format(d) for d in all_pairs]
+                        # all_pairs = ['__'.join(p).replace(' ', '_').lower() for p in all_pairs]
                         return list(filter(lambda x: x in model.vocab(), all_pairs))
                     else:
                         raise ValueError('unknown data format: {}'.format(model.data_format))
@@ -78,8 +79,10 @@ def main(model_type: str):
                             diff_c = [latent_dict[a] - latent_dict[b] for a, b in single_data['choice']]
                             sim = [cos_similarity(diff_s, c) for c in diff_c]
                         elif model.data_format == 'pair':
-                            stem = '__'.join(single_data['stem']).replace(' ', '_').lower()
-                            choice = ['__'.join(c).replace(' ', '_').lower() for c in single_data['choice']]
+                            stem = torchglow.util.word_pair_format(single_data['stem'])
+                            # stem = '__'.join(single_data['stem']).replace(' ', '_').lower()
+                            # choice = ['__'.join(c).replace(' ', '_').lower() for c in single_data['choice']]
+                            choice = [torchglow.util.word_pair_format(d) for d in single_data['choice']]
                             if stem not in model.vocab():
                                 return None
                             sim = [cos_similarity(latent_dict[stem], latent_dict[c]) if c in latent_dict else -100
