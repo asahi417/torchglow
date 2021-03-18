@@ -123,7 +123,7 @@ def get_iterator_fasttext(model_type: str):
 
     class Dataset(torch.utils.data.Dataset):
         """ 1D data_iterator iterator with RELATIVE word embedding """
-        model_vocab = set(model.vocab.keys())
+        model_vocab = set(model.vocab.keys()) if model_type != 'fasttext' else None
 
         def __init__(self, vocab, **kwargs):
             self.vocab = vocab
