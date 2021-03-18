@@ -150,4 +150,4 @@ class GlowBERT(GlowBase):
     def embed(self, data: List, batch: int = None):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        return self.embed_base(self.data_iterator(data), batch)
+        return self.embed_base(data, batch)
