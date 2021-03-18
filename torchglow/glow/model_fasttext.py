@@ -124,7 +124,7 @@ class GlowFasttext(GlowBase):
                 model_weight_path = self.config.model_weight_path
             else:
                 model_weight_path = self.config.model_weight_path_inter[checkpoint_option['epoch']]
-            self.model.load_state_dict(torch.load(model_weight_path))
+            self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # model on gpu
         self.model.to(self.device)

@@ -141,7 +141,7 @@ class GlowBase(nn.Module):
             num_training_steps=self.config.epoch if self.config.decay_lr else None)
         # load from existing config
         if self.config.is_trained:
-            optimizer_stat = torch.load(self.config.optimizer_path, map_location='cpu')  # allocate stats on cpu
+            optimizer_stat = torch.load(self.config.optimizer_path, map_location=torch.device('cpu'))
             self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
             self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
         # GPU mixture precision
