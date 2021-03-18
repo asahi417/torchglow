@@ -30,7 +30,7 @@ def main(model_type: str):
     argument_parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
     argument_parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/{}/*'.format(model_type), type=str)
     argument_parser.add_argument('-o', '--output-dir', help='directory to export model weight file',
-                                 default='./analogy_result.csv'.format(model_type), type=str)
+                                 default='./eval_output/{}/analogy_result.csv'.format(model_type), type=str)
     argument_parser.add_argument('--add-baseline', help='add baseline result', action='store_true')
     opt = argument_parser.parse_args()
     checkpoint_paths = glob(opt.checkpoint_path)
@@ -141,7 +141,7 @@ def main(model_type: str):
                 result.append(tmp_result)
 
     df = pd.DataFrame(result)
-    df.to_csv('{}/result.csv'.format(opt.output_dir))
+    df.to_csv(opt.output_dir)
 
 
 def main_bert():

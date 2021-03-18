@@ -110,8 +110,20 @@ def main_fasttext():
     argument_parser = config(argument_parser)
     argument_parser = config_fasttext(argument_parser)
     opt = argument_parser.parse_args()
+
+    # logging
     level = logging.DEBUG if opt.debug else logging.INFO
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
+
+    # add file handler
+    logger = logging.getLogger()
+    file_handler = logging.FileHandler('./test.log')
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
+    logger.addHandler(file_handler)
+
+    logging.info('This should be on both of a console and a file.')
+
     trainer = torchglow.GlowFasttext(
         model_type=opt.model_type,
         validation_rate=opt.validation_rate,
@@ -134,6 +146,7 @@ def main_fasttext():
         checkpoint_path=opt.checkpoint_path,
         unit_gaussian=opt.unit_gaussian,
         cache_dir=opt.cache_dir)
+    trainer.checkpoint_dir
     trainer.train(
         batch_valid=opt.batch_valid,
         num_workers=opt.num_workers,

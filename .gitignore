@@ -9,4 +9,4 @@ tests/img
 tests/data_sample
 ckpt*
 fasttext_prediction.json
-result.csv
+result

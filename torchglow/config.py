@@ -38,6 +38,7 @@ class Config:
         self.model_weight_path_inter = {k.split('model.')[-1].replace('.pt', ''): k
                                         for k in glob('{}/model.*.pt'.format(self.cache_dir))}
         self.optimizer_path = '{}/optimizer.pt'.format(self.cache_dir)
+        self.__cache_init()
 
     @property
     def is_trained(self):
@@ -59,7 +60,6 @@ class Config:
              optimizer_state_dict=None,
              scheduler_state_dict=None,
              last_model: bool = False):
-        self.__cache_init()
         logging.info('saving model weight in {}'.format(self.cache_dir))
         if last_model:
             with open('{}/config_train.json'.format(self.cache_dir), 'w') as f:
