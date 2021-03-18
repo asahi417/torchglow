@@ -68,8 +68,6 @@ def main(model_type: str):
                 val, test = torchglow.util.get_analogy_dataset(i)
                 # cache embedding
                 data = get_word_pairs(val + test)
-                print(data)
-                input()
                 vector = model.embed(data, batch=opt.batch)
                 latent_dict = {str(k): v for k, v in zip(data, vector)}
 
