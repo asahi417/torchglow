@@ -72,11 +72,11 @@ class GlowBase(nn.Module):
             self.data_dependent_initialization(loader)
 
         logging.info('start model training')
+        print(len(data_train))
         loader = torch.utils.data.DataLoader(
-            data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers)
+            data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers, drop_last=True)
         print(len(loader))
         input()
-
         if data_valid is not None:
             loader_valid = torch.utils.data.DataLoader(
                 data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
