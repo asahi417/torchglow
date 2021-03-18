@@ -204,6 +204,8 @@ class GlowBase(nn.Module):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
         batch = batch if batch is not None else self.config.batch
+        print(data)
+        input()
         data_loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
         latent_variable = []
         with torch.no_grad():
