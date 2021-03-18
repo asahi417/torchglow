@@ -1,3 +1,0 @@
-# Relation Embedding with Glow
-
-
