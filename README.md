@@ -32,9 +32,9 @@ torchglow-train-fasttext --num-workers 8 -e 45 --epoch-save 5 --filter-size 32 -
 
 ### BERT
 ```shell script
-torchglow-train-bert --num-workers 8 -e 45 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 8 --unit-gaussian
-torchglow-train-bert --num-workers 8 -e 45 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 6 --unit-gaussian
-torchglow-train-bert --num-workers 8 -e 45 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 4 --unit-gaussian
-torchglow-train-bert --num-workers 8 -e 45 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 2 --unit-gaussian
+torchglow-train-bert --num-workers 8 -e 25 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 8 --unit-gaussian
+torchglow-train-bert --num-workers 8 -e 25 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 6 --unit-gaussian
+torchglow-train-bert --num-workers 8 -e 25 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 4 --unit-gaussian
+torchglow-train-bert --num-workers 8 -e 25 --epoch-save 5 --lr 0.0001 -b 2048 --batch-init 2048 --n-flow 2 --unit-gaussian
 ```
 

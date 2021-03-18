@@ -69,7 +69,7 @@ def config_fasttext(parser):
 def main_bert():
     argument_parser = argparse.ArgumentParser(description='Train GlowBERT model.')
     argument_parser = config(argument_parser)
-    argument_parser = config_fasttext(argument_parser)
+    argument_parser = config_bert(argument_parser)
     opt = argument_parser.parse_args()
     trainer = torchglow.GlowBERT(
         lm_model=opt.lm_model,
@@ -95,6 +95,14 @@ def main_bert():
         checkpoint_path=opt.checkpoint_path,
         unit_gaussian=opt.unit_gaussian,
         cache_dir=opt.cache_dir)
+
+    # add file handler
+    logger = logging.getLogger()
+    file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
+    logger.addHandler(file_handler)
+
     trainer.train(
         batch_valid=opt.batch_valid,
         num_workers=opt.num_workers,
@@ -186,6 +194,14 @@ def main_image():
         momentum=opt.momentum,
         checkpoint_path=opt.checkpoint_path,
         cache_dir=opt.cache_dir)
+
+    # add file handler
+    logger = logging.getLogger()
+    file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
+    logger.addHandler(file_handler)
+
     trainer.train(
         batch_valid=opt.batch_valid,
         num_workers=opt.num_workers,
