@@ -18,7 +18,7 @@ class GlowFasttext(GlowBase):
     def __init__(self,
                  model_type: str = 'relative',
                  validation_rate: float = 0.2,
-                 training_step: int = 500,
+                 training_step: int = None,
                  epoch: int = 1000,
                  export_dir: str = './ckpt',
                  batch: int = 64,

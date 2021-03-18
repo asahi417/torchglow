@@ -72,14 +72,16 @@ class GlowBase(nn.Module):
             self.data_dependent_initialization(loader)
 
         logging.info('start model training')
-        print(len(data_train))
+
+        assert self.config.batch <= len(data_train)
         loader = torch.utils.data.DataLoader(
             data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers, drop_last=True)
-        print(len(loader))
-        input()
+        logging.info('\t * train data: {}, batch number: {}'.format(len(data_train), len(loader)))
+
         if data_valid is not None:
             loader_valid = torch.utils.data.DataLoader(
                 data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
+            logging.info('\t * valid data: {}, batch number: {}'.format(len(data_valid), len(loader_valid)))
         else:
             loader_valid = None
 
@@ -220,8 +222,12 @@ class GlowBase(nn.Module):
         self.model.train()
         total_bpd = 0
         data_size = 0
+        if self.config.training_step is not None:
+            step_in_epoch = min(len(data_loader), self.config.training_step)
+        else:
+            step_in_epoch = len(data_loader)
         for i, x in enumerate(data_loader):
-            if self.config.training_step is not None and i > self.config.training_step:
+            if i >= step_in_epoch:
                 break
             if self.converter is not None:
                 x = self.converter(x)
@@ -248,7 +254,7 @@ class GlowBase(nn.Module):
 
             if i % progress_interval == 0:
                 logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
-                    epoch_n, self.config.epoch, i, round(inst_bpd, 3), inst_lr))
+                    epoch_n, self.config.epoch, i + 1, step_in_epoch, round(inst_bpd, 3), inst_lr))
 
             # aggregate average bpd over epoch
             total_bpd += bpd.sum().cpu().item()

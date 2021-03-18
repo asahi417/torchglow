@@ -21,7 +21,7 @@ class GlowBERT(GlowBase):
                  lm_embedding_layers: List = -1,
                  data: str = 'common_word_pairs',
                  validation_rate: float = 0.2,
-                 training_step: int = 500,
+                 training_step: int = None,
                  epoch: int = 1000,
                  export_dir: str = './ckpt',
                  batch: int = 64,
