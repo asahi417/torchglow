@@ -74,6 +74,9 @@ class GlowBase(nn.Module):
         logging.info('start model training')
         loader = torch.utils.data.DataLoader(
             data_train, batch_size=self.config.batch, shuffle=True, num_workers=num_workers)
+        print(len(loader))
+        input()
+
         if data_valid is not None:
             loader_valid = torch.utils.data.DataLoader(
                 data_valid, batch_size=batch_valid, shuffle=False, num_workers=num_workers)
@@ -215,14 +218,10 @@ class GlowBase(nn.Module):
 
     def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
         self.model.train()
-        step_in_epoch = int(round(self.config.training_step / self.config.batch))
-        data_loader = iter(data_loader)
         total_bpd = 0
         data_size = 0
-        for i in range(step_in_epoch):
-            try:
-                x = next(data_loader)
-            except StopIteration:
+        for i, x in enumerate(data_loader):
+            if self.config.training_step is not None and i > self.config.training_step:
                 break
             if self.converter is not None:
                 x = self.converter(x)
@@ -249,7 +248,7 @@ class GlowBase(nn.Module):
 
             if i % progress_interval == 0:
                 logging.debug('[epoch {}/{}] (step {}/{}) instant bpd: {}: lr: {}'.format(
-                    epoch_n, self.config.epoch, i, step_in_epoch, round(inst_bpd, 3), inst_lr))
+                    epoch_n, self.config.epoch, i, round(inst_bpd, 3), inst_lr))
 
             # aggregate average bpd over epoch
             total_bpd += bpd.sum().cpu().item()

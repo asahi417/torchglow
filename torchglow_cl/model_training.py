@@ -6,7 +6,7 @@ import torchglow
 
 def config(parser):
     # model parameter
-    parser.add_argument('-s', '--training-step', help='training step in single epoch', default=50000, type=int)
+    parser.add_argument('-s', '--training-step', help='training step in single epoch', default=None, type=int)
     parser.add_argument('-e', '--epoch', help='training epochs', default=2000, type=int)
     parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
     parser.add_argument('--lr', help='learning rate', default=0.005, type=float)
