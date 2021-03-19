@@ -83,11 +83,11 @@ def main(model_type: str):
                 def get_prediction(single_data):
                     """ OOV should only happen in `fasttext` of `pair` format. """
                     if model_type == 'fasttext':
-                        if model.data_format == 'word':
+                        if model.data_format == 'fasttext':
                             diff_s = diff(latent_dict[single_data['stem'][0]], latent_dict[single_data['stem'][1]])
                             diff_c = [diff(latent_dict[a], latent_dict[b]) for a, b in single_data['choice']]
                             sim = [cos_similarity(diff_s, c) for c in diff_c]
-                        elif model.data_format == 'pair':
+                        elif model.data_format == 'relative':
                             stem = torchglow.util.word_pair_format(single_data['stem'])
                             choice = [torchglow.util.word_pair_format(d) for d in single_data['choice']]
                             if stem not in model.vocab:
@@ -97,6 +97,7 @@ def main(model_type: str):
                         else:
                             raise ValueError('unknown data format: {}'.format(model.data_format))
                     elif model_type == 'bert':
+                        assert model.data_format == 'bert', model.data_format
                         v = latent_dict[str(single_data['stem'])]
                         v_c = [latent_dict[str(c)] for c in single_data['choice']]
                         sim = [cos_similarity(v, _v_c) for _v_c in v_c]
