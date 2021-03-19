@@ -59,16 +59,19 @@ class Test(unittest.TestCase):
 
     def test_bert(self):
         for model in ['roberta-large', 'bert-large-cased']:
-            iterator = get_iterator_bert(model)
+            (iterator, _), dim = get_iterator_bert(model)
+            logging.info('\t hidden dimension: {}'.format(dim))
             get_dataset_word_pairs(iterator, data_format='bert')
 
     def test_fasttext(self):
         for model in ['fasttext']:
-            iterator = get_iterator_fasttext(model)
+            iterator, dim = get_iterator_fasttext(model)
+            logging.info('\t hidden dimension: {}'.format(dim))
             get_dataset_word_pairs(iterator, data_format='fasttext')
 
         for model in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
-            iterator = get_iterator_fasttext(model)
+            iterator, _ = get_iterator_fasttext(model)
+            logging.info('\t hidden dimension: {}'.format(dim))
             get_dataset_word_pairs(iterator, data_format='relative')
 
 
