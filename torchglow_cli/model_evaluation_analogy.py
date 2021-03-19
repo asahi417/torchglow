@@ -145,7 +145,7 @@ def main(model_type: str):
                 result.append(tmp_result)
 
     df = pd.DataFrame(result)
-    os.makedirs(os.path.basename(opt.output_dir), exist_ok=True)
+    os.makedirs(os.path.dirname(opt.output_dir), exist_ok=True)
     df.to_csv(opt.output_dir)
 
 
