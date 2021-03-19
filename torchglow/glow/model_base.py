@@ -158,6 +158,8 @@ class GlowBase(nn.Module):
             x = next(loader)
             if self.converter is not None:
                 x = self.converter(x)
+            if type(x) is not torch.Tensor:
+                x = x[0]
             x = x.to(self.device)
             self.model(x, return_loss=False, initialize_actnorm=True)
 
@@ -174,6 +176,8 @@ class GlowBase(nn.Module):
             for x in loader:
                 if self.converter is not None:
                     x = self.converter(x)
+                if type(x) is not torch.Tensor:
+                    x = x[0]
                 x = x.to(self.device)
                 z, _ = self.model(x, return_loss=False)
                 y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
@@ -210,6 +214,8 @@ class GlowBase(nn.Module):
             for x in data_loader:
                 if self.converter is not None:
                     x = self.converter(x)
+                if type(x) is not torch.Tensor:
+                    x = x[0]
                 x = x.to(self.device)
                 z, _ = self.model(x, return_loss=False)
                 if type(z) is list:  # for multi-scale latent variables used in image model
@@ -231,6 +237,8 @@ class GlowBase(nn.Module):
                 break
             if self.converter is not None:
                 x = self.converter(x)
+            if type(x) is not torch.Tensor:
+                x = x[0]
             x = x.to(self.device)
             # zero the parameter gradients
             self.optimizer.zero_grad()
@@ -273,6 +281,8 @@ class GlowBase(nn.Module):
             for x in data_loader:
                 if self.converter is not None:
                     x = self.converter(x)
+                if type(x) is not torch.Tensor:
+                    x = x[0]
                 x = x.to(self.device)
                 # forward: output prediction and get loss
                 if self.n_bins is not None:
