@@ -177,12 +177,14 @@ class AffineCoupling(nn.Module):
                  in_channels: int,
                  filter_size: int = 512,
                  kernel_size: int = 3,
-                 stride: int = 1):
+                 stride: int = 1,
+                 additive_coupling: bool = False):
         assert in_channels % 2 == 0, in_channels
         super().__init__()
 
         # affine sub-network: take the half of the input channel and produce feature sized full channel
         kernel_size_mid = 1  # bottle neck layer
+        out_channel = in_channels / 2 if additive_coupling else in_channels
         self.net = nn.Sequential(
             nn.Conv2d(int(in_channels / 2), filter_size, kernel_size, stride,
                       padding=tuple([((kernel_size - 1) * stride + 1) // 2] * 2)),
@@ -190,7 +192,7 @@ class AffineCoupling(nn.Module):
             nn.Conv2d(filter_size, filter_size, kernel_size_mid, stride,
                       padding=tuple([((kernel_size_mid - 1) * stride + 1) // 2] * 2)),
             nn.ReLU(),
-            ZeroConv2d(filter_size, in_channels, kernel_size, stride),
+            ZeroConv2d(filter_size, out_channel, kernel_size, stride),
         )
         # initialization
         self.net[0].weight.data.normal_(0, 0.05)
@@ -199,11 +201,16 @@ class AffineCoupling(nn.Module):
         self.net[2].bias.data.zero_()
 
         self.scale = nn.Parameter(torch.ones(in_channels, 1, 1))
+        self.additive_coupling = additive_coupling
 
     def forward(self, x, log_det=None, reverse: bool = False):
         x_a, x_b = x.chunk(2, 1)
-        log_s, t = self.net(x_b).chunk(2, 1)
-        s = torch.sigmoid(log_s + 2)
+        if self.additive_coupling:
+            t = self.net(x_b)
+            s = 1
+        else:
+            log_s, t = self.net(x_b).chunk(2, 1)
+            s = torch.sigmoid(log_s + 2)
         if reverse:
             y_a = x_a / s - t
         else:
@@ -222,13 +229,15 @@ class FlowStep(nn.Module):
                  kernel_size: int = 3,
                  stride: int = 1,
                  actnorm_scale: float = 1.0,
-                 lu_decomposition: bool = False):
+                 lu_decomposition: bool = False,
+                 additive_coupling: bool = False):
         super().__init__()
 
         self.actnorm = ActNorm2d(in_channels, actnorm_scale)
         self.invconv = InvertibleConv2d(in_channels, lu_decomposition)
         self.coupling = AffineCoupling(
-            in_channels, filter_size=filter_size, kernel_size=kernel_size, stride=stride)
+            in_channels, filter_size=filter_size, kernel_size=kernel_size, stride=stride,
+            additive_coupling=additive_coupling)
 
     def forward(self, x, log_det=None, reverse: bool = False, initialize_actnorm: bool = False):
         if reverse:
@@ -384,7 +393,8 @@ class GlowNetwork(nn.Module):
                  n_level: int = 3,
                  actnorm_scale: float = 1.0,
                  lu_decomposition: bool = False,
-                 unit_gaussian: bool = False):
+                 unit_gaussian: bool = False,
+                 additive_coupling: bool = False):
         """ Glow network architecture
 
         Parameters
@@ -401,13 +411,15 @@ class GlowNetwork(nn.Module):
             Factor to scale ActNorm.
         lu_decomposition : bool
             Whether use LU decomposition in invertible CNN layer.
+        additive_coupling : bool
+            Additive coupling instead of affine coupling.
         """
         super().__init__()
         self.layers = nn.ModuleList()
         self.n_flow_step = n_flow_step
         self.n_level = n_level
         flow_config = {'filter_size': filter_size, 'kernel_size': kernel_size, 'stride': stride,
-                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition}
+                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition, 'additive_coupling': additive_coupling}
         h, w, c = image_shape
         self.pixel_size = h * w * c
         assert c in [1, 3], "image_shape should be HWC, like (64, 64, 3): {}".format(image_shape)
@@ -516,7 +528,8 @@ class GlowNetwork1D(nn.Module):
                  n_flow_step: int = 10,
                  actnorm_scale: float = 1.0,
                  lu_decomposition: bool = False,
-                 unit_gaussian: bool = False):
+                 unit_gaussian: bool = False,
+                 additive_coupling: bool = False):
         """ Glow network architecture
 
         Parameters
@@ -533,12 +546,15 @@ class GlowNetwork1D(nn.Module):
             Whether use LU decomposition in invertible CNN layer.
         unit_gaussian : bool
             Employ unit gaussian instead of learnt prior as the constrain.
+        additive_coupling : bool
+            Additive coupling instead of affine coupling.
         """
         super().__init__()
         self.layers = nn.ModuleList()
         self.n_flow_step = n_flow_step
         flow_config = {'filter_size': filter_size, 'kernel_size': 1, 'stride': 1,
-                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition}
+                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition,
+                       'additive_coupling': additive_coupling}
         self.n_channel = n_channel
         for _ in range(self.n_flow_step):
             self.layers.append(FlowStep(in_channels=self.n_channel, **flow_config))

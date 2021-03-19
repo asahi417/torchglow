@@ -22,6 +22,7 @@ def config(parser):
     parser.add_argument('--optimizer', help='optimizer `adam`/`adamax`/`adamw`', default='adamax', type=str)
     parser.add_argument("--momentum", help="sgd momentum", default=0.9, type=float)
     parser.add_argument('--unit-gaussian', help='unit gaussian instead of learnt gaussian', action='store_true')
+    parser.add_argument('--additive-coupling', help='additive coupling instead of affine coupling', action='store_true')
     # optimization parameter
     parser.add_argument('--batch-valid', help='batch size for validation', default=64, type=int)
     parser.add_argument('--cache-dir', help='cache directory to store dataset', default=None, type=str)
@@ -100,6 +101,7 @@ def main_bert():
         momentum=opt.momentum,
         checkpoint_path=opt.checkpoint_path,
         unit_gaussian=opt.unit_gaussian,
+        additive_coupling=opt.additive_coupling,
         cache_dir=opt.cache_dir)
 
     # add file handler
@@ -150,6 +152,7 @@ def main_fasttext():
         momentum=opt.momentum,
         checkpoint_path=opt.checkpoint_path,
         unit_gaussian=opt.unit_gaussian,
+        additive_coupling=opt.additive_coupling,
         cache_dir=opt.cache_dir)
 
     # add file handler
@@ -202,7 +205,10 @@ def main_image():
         optimizer=opt.optimizer,
         momentum=opt.momentum,
         checkpoint_path=opt.checkpoint_path,
-        cache_dir=opt.cache_dir)
+        cache_dir=opt.cache_dir,
+        unit_gaussian=opt.unit_gaussian,
+        additive_coupling=opt.additive_coupling
+    )
 
     # add file handler
     logger = logging.getLogger()

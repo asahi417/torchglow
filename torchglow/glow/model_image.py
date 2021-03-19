@@ -39,6 +39,7 @@ class Glow(GlowBase):
                  momentum: float = 0.9,
                  checkpoint_path: str = None,
                  unit_gaussian: bool = False,
+                 additive_coupling: bool = False,
                  cache_dir: str = None,
                  checkpoint_option: Dict = None):
         """ Glow for 2D image data
@@ -83,6 +84,8 @@ class Glow(GlowBase):
             Penalty for l2 weight decay.
         checkpoint_path : str
             Path to checkpoint to load trained weight.
+        additive_coupling : bool
+            Additive coupling instead of affine coupling.
         """
         super(Glow, self).__init__()
         fix_seed(random_seed)
@@ -110,7 +113,8 @@ class Glow(GlowBase):
             optimizer=optimizer,
             batch_init=batch_init,
             momentum=momentum,
-            unit_gaussian=unit_gaussian
+            unit_gaussian=unit_gaussian,
+            additive_coupling=additive_coupling
         )
         # model
         self.model = GlowNetwork(
@@ -120,7 +124,8 @@ class Glow(GlowBase):
             n_level=self.config.n_level,
             actnorm_scale=self.config.actnorm_scale,
             lu_decomposition=self.config.lu_decomposition,
-            unit_gaussian=unit_gaussian
+            unit_gaussian=self.config.unit_gaussian,
+            additive_coupling=self.config.additive_coupling
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)

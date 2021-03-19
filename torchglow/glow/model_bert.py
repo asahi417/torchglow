@@ -38,6 +38,7 @@ class GlowBERT(GlowBase):
                  optimizer: str = 'adamax',
                  momentum: float = 0.9,
                  unit_gaussian: bool = True,
+                 additive_coupling: bool = False,
                  checkpoint_path: str = None,
                  checkpoint_option: Dict = None,
                  cache_dir: str = None):
@@ -75,6 +76,8 @@ class GlowBERT(GlowBase):
             Penalty for l2 weight decay.
         checkpoint_path : str
             Path to checkpoint to load trained weight.
+        additive_coupling : bool
+            Additive coupling instead of affine coupling.
         """
         super(GlowBERT, self).__init__()
         fix_seed(random_seed)
@@ -103,7 +106,8 @@ class GlowBERT(GlowBase):
             optimizer=optimizer,
             batch_init=batch_init,
             momentum=momentum,
-            unit_gaussian=unit_gaussian
+            unit_gaussian=unit_gaussian,
+            additive_coupling=additive_coupling
         )
         # get preprocessing module
         if data == 'common_word_pairs':
@@ -120,7 +124,8 @@ class GlowBERT(GlowBase):
             n_flow_step=self.config.n_flow_step,
             actnorm_scale=self.config.actnorm_scale,
             lu_decomposition=self.config.lu_decomposition,
-            unit_gaussian=self.config.unit_gaussian
+            unit_gaussian=self.config.unit_gaussian,
+            additive_coupling=self.config.additive_coupling
         )
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
