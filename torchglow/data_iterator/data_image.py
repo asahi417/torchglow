@@ -94,7 +94,7 @@ class Dataset(torch.utils.data.Dataset):
         # load tfrecord
         dataset = TFRecordDataset(tfr_file, tfr_file.replace('tfrecords', 'index'))
         single_data = list(dataset)[n]
-        img = single_data['data_iterator'].reshape(single_data['shape']).astype('float32')
+        img = single_data['data'].reshape(single_data['shape']).astype('float32')
         # normalize image to [0, 1]
         img = (img / 2 ** (8 - self.n_bits_x)).round() / (2. ** self.n_bits_x)
         # apply transformation
