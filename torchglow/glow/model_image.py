@@ -1,9 +1,7 @@
 """ Glow for 2D image data_iterator """
 import logging
-from math import log
 
 import torch
-from torch.utils.tensorboard import SummaryWriter
 
 from .model_base import GlowBase
 from .module import GlowNetwork

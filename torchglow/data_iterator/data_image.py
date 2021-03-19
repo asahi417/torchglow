@@ -129,12 +129,12 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
     t_valid = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1])])
 
     t_train = []
-    if image_size:
-        t_train.append(transforms.Resize(image_size))
     t_train += [
         transforms.ToTensor(),  # convert to float tensor scaled in [0, 1], and reshape HWC to CHW
         transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1]),  # centering pixel
     ]
+    if image_size:
+        t_train.append(transforms.Resize(image_size))
 
     if data == 'cifar10':
         assert n_bits_x == 8, 'cifar10 does not support n_bits_x != 8'

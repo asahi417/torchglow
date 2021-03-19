@@ -63,6 +63,9 @@ class Test(unittest.TestCase):
             logging.info('\t hidden dimension: {}'.format(dim))
             get_dataset_word_pairs(iterator, data_format='bert')
 
+            # for future bertflow implementation
+            # (iterator, _), dim = get_iterator_bert(model, mode='cls')
+
     def test_fasttext(self):
         for model in ['fasttext']:
             iterator, dim = get_iterator_fasttext(model)
