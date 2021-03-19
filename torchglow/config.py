@@ -32,7 +32,7 @@ class Config:
             if len(same_config) != 0:
                 input('\ncheckpoint already exists: {}\n enter to overwrite >>>'.format(same_config[0]))
                 for _p, _ in same_config:
-                    shutil.rmtree(_p)
+                    shutil.rmtree(os.path.dirname(_p))
             self.cache_dir = '{}/{}'.format(export_dir, self.get_random_string(
                 [os.path.basename(i.replace('/config.json', '')) for i in ex_configs.keys()]
             ))
