@@ -126,7 +126,11 @@ class Glow(GlowBase):
 
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
-            self.model.load_state_dict(torch.load(self.config.model_weight_path, map_location=torch.device('cpu')))
+            if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
+                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_option['epoch']]
+            else:
+                model_weight_path = self.config.model_weight_path
+            self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # model on gpu
         self.model.to(self.device)

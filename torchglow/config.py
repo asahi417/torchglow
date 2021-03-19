@@ -42,6 +42,8 @@ class Config:
         self.model_weight_path_inter = {k.split('model.')[-1].replace('.pt', ''): k
                                         for k in glob('{}/model.*.pt'.format(self.cache_dir))}
         self.optimizer_path = '{}/optimizer.pt'.format(self.cache_dir)
+        self.optimizer_path_inter = {k.split('optimizer.')[-1].replace('.pt', ''): k
+                                     for k in glob('{}/optimizer.*.pt'.format(self.cache_dir))}
         self.__cache_init()
 
     @property
@@ -76,6 +78,11 @@ class Config:
                 }, self.optimizer_path)
         else:
             torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
+            if optimizer_state_dict and scheduler_state_dict:
+                torch.save({
+                    'optimizer_state_dict': optimizer_state_dict,
+                    'scheduler_state_dict': scheduler_state_dict
+                }, '{}/optimizer.{}.pt'.format(self.cache_dir, epoch))
 
     @staticmethod
     def get_random_string(exclude: List = None, length: int = 6):

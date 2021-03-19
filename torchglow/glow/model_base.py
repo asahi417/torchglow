@@ -102,7 +102,10 @@ class GlowBase(nn.Module):
                             e, self.config.epoch, round(mean_bpd, 3)))
 
                     if e % epoch_save == 0 and e != 0:
-                        self.config.save(self.model.state_dict(), epoch=e)
+                        self.config.save(self.model.state_dict(),
+                                         optimizer_state_dict=self.optimizer.state_dict(),
+                                         scheduler_state_dict=self.scheduler.state_dict(),
+                                         epoch=e)
 
                     self.scheduler.step()
 
@@ -141,7 +144,11 @@ class GlowBase(nn.Module):
             num_training_steps=self.config.epoch if self.config.decay_lr else None)
         # load from existing config
         if self.config.is_trained:
-            optimizer_stat = torch.load(self.config.optimizer_path, map_location=torch.device('cpu'))
+            if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
+                optimizer_path = self.config.optimizer_path_inter[self.checkpoint_option['epoch']]
+            else:
+                optimizer_path = self.config.optimizer_path
+            optimizer_stat = torch.load(optimizer_path, map_location=torch.device('cpu'))
             self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
             self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
         # GPU mixture precision

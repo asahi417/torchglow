@@ -125,13 +125,13 @@ class GlowBERT(GlowBase):
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
-
+        self.checkpoint_option = checkpoint_option
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
-            if not checkpoint_option:
-                model_weight_path = self.config.model_weight_path
+            if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
+                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_option['epoch']]
             else:
-                model_weight_path = self.config.model_weight_path_inter[checkpoint_option['epoch']]
+                model_weight_path = self.config.model_weight_path
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # model on gpu
