@@ -62,13 +62,11 @@ def get_dataset_word_pairs(data_iterator,
 
     if validation_rate == 0:
         return data_iterator(data, parallel=parallel), None
+    n = int(len(data) * validation_rate)
     try:
-        print(data[:])
+        valid_set = data_iterator(data[:n], parallel=parallel)
     except TypeError:
         print(data)
-        input()
-    n = int(len(data) * validation_rate)
-    valid_set = data_iterator(data[:n], parallel=parallel)
     train_set = data_iterator(data[n:], parallel=parallel)
     return train_set, valid_set
 
