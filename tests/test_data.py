@@ -7,7 +7,7 @@ import random
 
 import torch
 import numpy as np
-from torchglow.data_iterator import get_dataset_image, get_image_decoder, get_dataset_word_embedding
+from torchglow.data_iterator import get_dataset_image, get_image_decoder, get_dataset_word_pairs, get_iterator_fasttext, get_iterator_bert
 
 
 def fix_seed(seed=12):
@@ -58,12 +58,14 @@ class Test(unittest.TestCase):
             decoder(img).save('./tests/img/test_data/{}.valid.{}.transform.png'.format(data, i))
 
     def test_we(self):
-        train, val = get_dataset_word_embedding(model_type='relative')
-        train = iter(train)
-        val = iter(val)
-        print(next(train))
-        print(next(val))
+        for model in ['fasttext', 'relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+            iterator = get_iterator_fasttext(model)
+            get_dataset_word_pairs(iterator)
 
+        for model in ['roberta-large', 'bert-large-cased']:
+            iterator = get_iterator_bert(model)
+            get_dataset_word_pairs(iterator)
+        
 
 if __name__ == "__main__":
     unittest.main()
