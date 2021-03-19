@@ -28,7 +28,7 @@ def get_image(images, decoder, data):
 class Test(unittest.TestCase):
     """ Test """
 
-    def test(self):
+    def test_image(self):
 
         if os.path.exists('./tests/img/test_data'):
             shutil.rmtree('./tests/img/test_data')
@@ -57,19 +57,19 @@ class Test(unittest.TestCase):
             img = next(val)[0]
             decoder(img).save('./tests/img/test_data/{}.valid.{}.transform.png'.format(data, i))
 
-    def test_we(self):
+    def test_bert(self):
+        for model in ['roberta-large', 'bert-large-cased']:
+            iterator = get_iterator_bert(model)
+            get_dataset_word_pairs(iterator, data_format='bert')
+
+    def test_fasttext(self):
         for model in ['fasttext']:
             iterator = get_iterator_fasttext(model)
-            get_dataset_word_pairs(iterator, data_format='word')
+            get_dataset_word_pairs(iterator, data_format='fasttext')
 
         for model in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
             iterator = get_iterator_fasttext(model)
-            get_dataset_word_pairs(iterator, data_format='pair')
-
-        for model in ['roberta-large', 'bert-large-cased']:
-            iterator = get_iterator_bert(model)
-            get_dataset_word_pairs(iterator)
-
+            get_dataset_word_pairs(iterator, data_format='relative')
 
 if __name__ == "__main__":
     unittest.main()
