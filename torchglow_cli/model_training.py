@@ -224,11 +224,11 @@ def main_image():
 if __name__ == '__main__':
     # remedy if the cli is not recognized by system
     import sys
-    if sys.argv[0] == 'image':
+    if sys.argv[1] == 'image':
         main_image()
-    elif sys.argv[0] == 'bert':
+    elif sys.argv[1] == 'bert':
         main_bert()
-    elif sys.argv[0] == 'fasttext':
+    elif sys.argv[1] == 'fasttext':
         main_fasttext()
     else:
-        raise ValueError('unknown mode: {}'.format(sys.argv[0]))
+        raise ValueError('unknown mode: {}'.format(sys.argv))
