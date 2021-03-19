@@ -65,7 +65,7 @@ class Test(unittest.TestCase):
         for model in ['roberta-large', 'bert-large-cased']:
             iterator = get_iterator_bert(model)
             get_dataset_word_pairs(iterator)
-        
+
 
 if __name__ == "__main__":
     unittest.main()

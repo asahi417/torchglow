@@ -44,11 +44,11 @@ setup(
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
-            'torchglow-train-image = torchglow_cl.model_training:main_image',
-            'torchglow-train-bert = torchglow_cl.model_training:main_bert',
-            'torchglow-train-fasttext = torchglow_cl.model_training:main_fasttext',
-            'torchglow-eval-bert = torchglow_cl.model_evaluation_analogy:main_bert',
-            'torchglow-eval-fasttext = torchglow_cl.model_evaluation_analogy:main_fasttext'
+            'torchglow-train-image = torchglow_cli.model_training:main_image',
+            'torchglow-train-bert = torchglow_cli.model_training:main_bert',
+            'torchglow-train-fasttext = torchglow_cli.model_training:main_fasttext',
+            'torchglow-eval-bert = torchglow_cli.model_evaluation_analogy:main_bert',
+            'torchglow-eval-fasttext = torchglow_cli.model_evaluation_analogy:main_fasttext'
         ]
     }
 )

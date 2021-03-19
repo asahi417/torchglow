@@ -152,3 +152,14 @@ def main_bert():
 
 def main_fasttext():
     main('fasttext')
+
+
+if __name__ == '__main__':
+    # remedy if the cli is not recognized by system
+    import sys
+    if sys.argv[0] == 'bert':
+        main_bert()
+    elif sys.argv[0] == 'fasttext':
+        main_fasttext()
+    else:
+        raise ValueError('unknown mode: {}'.format(sys.argv[0]))
