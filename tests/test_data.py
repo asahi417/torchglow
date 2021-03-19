@@ -71,5 +71,6 @@ class Test(unittest.TestCase):
             iterator = get_iterator_fasttext(model)
             get_dataset_word_pairs(iterator, data_format='relative')
 
+
 if __name__ == "__main__":
     unittest.main()
