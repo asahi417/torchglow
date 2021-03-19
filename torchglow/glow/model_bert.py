@@ -125,6 +125,7 @@ class GlowBERT(GlowBase):
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
+        self.checkpoint_dir = self.config.cache_dir
         self.checkpoint_option = checkpoint_option
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
@@ -138,7 +139,6 @@ class GlowBERT(GlowBase):
         self.model.to(self.device)
         logging.info('GlowBERT running on {} GPUs'.format(self.n_gpu))
 
-        self.checkpoint_dir = self.config.cache_dir
 
     def setup_data(self):
         """ Initialize training dataset. """

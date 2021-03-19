@@ -118,6 +118,8 @@ class GlowFasttext(GlowBase):
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
 
+        self.checkpoint_dir = self.config.cache_dir
+        self.checkpoint_option = checkpoint_option
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
             if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
@@ -130,8 +132,6 @@ class GlowFasttext(GlowBase):
         self.model.to(self.device)
         logging.info('GlowFasttext running on {} GPUs'.format(self.n_gpu))
 
-        self.checkpoint_dir = self.config.cache_dir
-        self.checkpoint_option = checkpoint_option
         if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
             self.data_format = 'relative'
         else:
