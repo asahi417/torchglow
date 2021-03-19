@@ -223,12 +223,13 @@ def main_image():
 
 if __name__ == '__main__':
     # remedy if the cli is not recognized by system
-    import sys
-    if sys.argv[1] == 'image':
+    import os
+    _model_type = os.getenv('GLOW_MODEL', 'image')
+    if _model_type == 'image':
         main_image()
-    elif sys.argv[1] == 'bert':
+    elif _model_type == 'bert':
         main_bert()
-    elif sys.argv[1] == 'fasttext':
+    elif _model_type == 'fasttext':
         main_fasttext()
     else:
         raise ValueError('unknown mode: {}'.format(sys.argv))
