@@ -19,7 +19,7 @@ COMMON_WORD_PAIRS_URL = 'https://github.com/asahi417/AnalogyTools/releases/downl
 def get_dataset_word_pairs(data_iterator,
                            parallel: bool = True,
                            validation_rate: float = 0.2,
-                           data_format: str = None):
+                           data_format: str = 'bert'):
     """ Get word pairs dataset iterator.
 
     Parameters
@@ -32,8 +32,9 @@ def get_dataset_word_pairs(data_iterator,
         Ratio of validation set.
     data_format : str
         If provided, convert each pair (A, B) to the format
-        - 'pair':  'A__B'
-        - 'word': flatten all pair to be a list of individual words
+        - 'relative':  'A__B'
+        - 'fasttext': flatten all pair to be a list of individual words
+        - 'bert'    : ['A', 'B']
 
     Returns
     -------
@@ -46,11 +47,11 @@ def get_dataset_word_pairs(data_iterator,
     data = load_pickle(path_data)
     random.Random(0).shuffle(data)
 
-    assert data_format is None or data_format in ['pair', 'word'], data_format
-    if data_format == 'pair':
+    assert data_format in ['relative', 'fasttext', 'bert'], data_format
+    if data_format == 'relative':
         # convert word pair to pair-format of relative embeddings
         data = [word_pair_format(d) for d in data]
-    elif data_format == 'word':
+    elif data_format == 'fasttext':
         # convert word pair to word-level data_iterator
         data = list(set(list(chain(*data))))
 

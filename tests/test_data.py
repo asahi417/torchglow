@@ -58,9 +58,13 @@ class Test(unittest.TestCase):
             decoder(img).save('./tests/img/test_data/{}.valid.{}.transform.png'.format(data, i))
 
     def test_we(self):
-        for model in ['fasttext', 'relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+        for model in ['fasttext']:
             iterator = get_iterator_fasttext(model)
-            get_dataset_word_pairs(iterator)
+            get_dataset_word_pairs(iterator, data_format='word')
+
+        for model in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+            iterator = get_iterator_fasttext(model)
+            get_dataset_word_pairs(iterator, data_format='pair')
 
         for model in ['roberta-large', 'bert-large-cased']:
             iterator = get_iterator_bert(model)

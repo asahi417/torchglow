@@ -132,18 +132,14 @@ class GlowFasttext(GlowBase):
 
         self.checkpoint_dir = self.config.cache_dir
         if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
-            self.data_format = 'pair'
+            self.data_format = 'relative'
         else:
-            self.data_format = 'word'
+            self.data_format = 'fasttext'
 
     def setup_data(self):
         """ Initialize training dataset. """
-        if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
-            return get_dataset_word_pairs(
-                self.data_iterator, validation_rate=self.config.validation_rate, data_format='pair')
-        else:
-            return get_dataset_word_pairs(
-                self.data_iterator, validation_rate=self.config.validation_rate, data_format='word')
+        return get_dataset_word_pairs(
+            self.data_iterator, validation_rate=self.config.validation_rate, data_format=self.data_format)
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
