@@ -216,7 +216,8 @@ class AffineCoupling(nn.Module):
         else:
             y_a = (x_a + t) * s
             if log_det is not None:
-                log_det = log_det + torch.sum(torch.log(s).view(x.shape[0], -1), 1)
+                if not self.additive_coupling:
+                    log_det = log_det + torch.sum(torch.log(s).view(x.shape[0], -1), 1)
         return torch.cat([y_a, x_b], 1), log_det
 
 
