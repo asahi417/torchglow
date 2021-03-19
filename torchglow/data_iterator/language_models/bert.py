@@ -14,7 +14,7 @@ __all__ = 'BERT'
 class EncodePlus:
     """ Wrapper of encode_plus for multiprocessing. """
 
-    def __init__(self, tokenizer, max_length: int, prefix: str = None, mode: str = 'relative'):
+    def __init__(self, tokenizer, max_length: int, prefix: str = None, mode: str = 'mask'):
         self.prefix = prefix
         self.tokenizer = tokenizer
         self.max_length = self.tokenizer.model_max_length
@@ -67,7 +67,6 @@ class Dataset(torch.utils.data.Dataset):
 
 class BERT:
     """ Get embedding from transformers language model. """
-
 
     def __init__(self,
                  model: str,

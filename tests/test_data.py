@@ -59,7 +59,7 @@ class Test(unittest.TestCase):
 
     def test_bert(self):
         for model in ['roberta-large', 'bert-large-cased']:
-            (iterator, _), dim = get_iterator_bert(model)
+            (iterator, _), dim = get_iterator_bert(model, mode='mask')
             logging.info('\t hidden dimension: {}'.format(dim))
             get_dataset_word_pairs(iterator, data_format='bert')
 

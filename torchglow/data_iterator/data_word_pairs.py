@@ -69,7 +69,7 @@ def get_dataset_word_pairs(data_iterator,
     return train_set, valid_set
 
 
-def get_iterator_bert(model: str, max_length: int = 32, embedding_layers: List = -1, mode: str = 'cls'):
+def get_iterator_bert(model: str, max_length: int = 32, embedding_layers: List = -1, mode: str = 'mask'):
     """ Get data iterator with all pipelines required as preprocessing for BERT embedding.
 
     Parameters
