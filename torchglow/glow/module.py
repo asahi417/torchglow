@@ -184,7 +184,7 @@ class AffineCoupling(nn.Module):
 
         # affine sub-network: take the half of the input channel and produce feature sized full channel
         kernel_size_mid = 1  # bottle neck layer
-        out_channel = in_channels / 2 if additive_coupling else in_channels
+        out_channel = int(in_channels / 2) if additive_coupling else in_channels
         self.net = nn.Sequential(
             nn.Conv2d(int(in_channels / 2), filter_size, kernel_size, stride,
                       padding=tuple([((kernel_size - 1) * stride + 1) // 2] * 2)),
