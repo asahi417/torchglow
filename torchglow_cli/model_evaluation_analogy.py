@@ -56,9 +56,9 @@ def main(model_type: str):
             def get_word_pairs(word_pairs):
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in word_pairs]))
                 if model_type == 'fasttext':
-                    if model.data_format == 'word':
+                    if model.data_format == 'fasttext':
                         return list(set(list(chain(*all_pairs))))
-                    elif model.data_format == 'pair':
+                    elif model.data_format == 'relative':
                         all_pairs = [torchglow.util.word_pair_format(d) for d in all_pairs]
                         if model.vocab is not None:
                             return list(filter(lambda x: x in model.vocab, all_pairs))
