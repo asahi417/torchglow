@@ -1,5 +1,6 @@
 """ Glow for 2D image data_iterator """
 import logging
+from typing import Dict
 
 import torch
 
@@ -38,7 +39,8 @@ class Glow(GlowBase):
                  momentum: float = 0.9,
                  checkpoint_path: str = None,
                  unit_gaussian: bool = False,
-                 cache_dir: str = None):
+                 cache_dir: str = None,
+                 checkpoint_option: Dict = None):
         """ Glow for 2D image data
 
         Parameters
@@ -123,7 +125,8 @@ class Glow(GlowBase):
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
-
+        self.checkpoint_dir = self.config.cache_dir
+        self.checkpoint_option = checkpoint_option
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
             if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
@@ -136,7 +139,6 @@ class Glow(GlowBase):
         self.model.to(self.device)
         logging.info('Glow running on {} GPUs'.format(self.n_gpu))
 
-        self.checkpoint_dir = self.config.cache_dir
         self.n_bins = 2 ** self.config.n_bits_x
 
     def setup_data(self):

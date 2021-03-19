@@ -118,6 +118,8 @@ def main(model_type: str):
                                           tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
                 result.append(tmp_result)
 
+            del model
+
     # drop common config keys to keep only what different across models
     k = result[0].keys()
     k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
@@ -153,13 +155,3 @@ def main_bert():
 def main_fasttext():
     main('fasttext')
 
-
-if __name__ == '__main__':
-    # remedy if the cli is not recognized by system
-    import sys
-    if sys.argv[0] == 'bert':
-        main_bert()
-    elif sys.argv[0] == 'fasttext':
-        main_fasttext()
-    else:
-        raise ValueError('unknown mode: {}'.format(sys.argv[0]))
