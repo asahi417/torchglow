@@ -33,6 +33,7 @@ def config(parser):
     parser.add_argument('--epoch-save', help='interval to save model weight', default=1000, type=int)
     # load existing checkpoint
     parser.add_argument('--checkpoint-path', help='train existing checkpoint', default=None, type=str)
+    parser.add_argument('--checkpoint-epoch', help='train existing checkpoint', default=None, type=str)
     # misc
     parser.add_argument('--debug', help='log level', action='store_true')
     return parser

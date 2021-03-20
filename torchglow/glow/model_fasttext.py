@@ -1,4 +1,5 @@
 """ Glow on 1D Word Embeddings from Fasttext """
+import os
 import logging
 from typing import Dict, List
 import torch
@@ -125,10 +126,15 @@ class GlowFasttext(GlowBase):
 
         self.checkpoint_dir = self.config.cache_dir
         self.checkpoint_option = checkpoint_option
+        self.checkpoint_epoch = None
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
             if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
+                self.checkpoint_epoch = self.checkpoint_option['epoch']
                 model_weight_path = self.config.model_weight_path_inter[self.checkpoint_option['epoch']]
+            elif not os.path.exists(self.config.model_weight_path):
+                self.checkpoint_epoch = str(sorted([int(k) for k in self.config.model_weight_path_inter.keys()])[-1])
+                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_epoch]
             else:
                 model_weight_path = self.config.model_weight_path
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))

@@ -48,11 +48,11 @@ class Config:
 
     @property
     def is_trained(self):
-        return os.path.exists(self.model_weight_path)
+        return os.path.exists(self.model_weight_path) or len(self.model_weight_path_inter) > 0
 
     @property
     def is_fully_trained(self):
-        return self.epoch_elapsed >= self.epoch
+        return self.epoch_elapsed >= self.config.epoch
 
     def __cache_init(self):
         if not os.path.exists('{}/config.json'.format(self.cache_dir)):
