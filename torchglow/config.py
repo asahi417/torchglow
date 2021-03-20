@@ -52,7 +52,7 @@ class Config:
 
     @property
     def is_fully_trained(self):
-        return self.epoch_elapsed >= self.config.epoch
+        return self.epoch_elapsed >= self.epoch
 
     def __cache_init(self):
         if not os.path.exists('{}/config.json'.format(self.cache_dir)):
