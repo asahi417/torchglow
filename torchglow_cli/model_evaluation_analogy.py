@@ -134,7 +134,7 @@ def main(model_type: str):
             base_prediction = torchglow.util.get_analogy_baseline(baseline)
             for i in DATA:
                 tmp_result = {k_: None for k_ in k}
-                tmp_result['model_type'] = baseline
+                tmp_result['model_type'] = 'baseline.' + baseline
                 tmp_result['data'] = i
                 val, test = torchglow.util.get_analogy_dataset(i)
                 for prefix, data in zip(['test', 'valid'], [test, val]):
