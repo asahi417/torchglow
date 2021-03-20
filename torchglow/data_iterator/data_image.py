@@ -126,26 +126,26 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
     """
     cache_dir = CACHE_DIR if cache_dir is None else cache_dir
 
-    t_valid = transforms.Compose([transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1])])
-
-    t_train = []
-    t_train += [
+    t_valid = [transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1])]
+    t_train = [
         transforms.ToTensor(),  # convert to float tensor scaled in [0, 1], and reshape HWC to CHW
         transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1]),  # centering pixel
     ]
     if image_size:
         t_train.append(transforms.Resize(image_size))
+        t_valid.append(transforms.Resize(image_size))
 
     if data == 'cifar10':
         assert n_bits_x == 8, 'cifar10 does not support n_bits_x != 8'
 
         t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
         t_train = transforms.Compose(t_train)
-
+        t_valid = transforms.Compose(t_valid)
         train_set = torchvision.datasets.CIFAR10(root=cache_dir, train=True, download=True, transform=t_train)
         valid_set = torchvision.datasets.CIFAR10(root=cache_dir, train=False, download=True, transform=t_valid)
     elif data == 'celeba':
         t_train = transforms.Compose(t_train)
+        t_valid = transforms.Compose(t_valid)
         train_set = Dataset(
             '{}/celeba-tfr/train'.format(cache_dir), root=cache_dir, train=True, transform=t_train)
         valid_set = Dataset(
