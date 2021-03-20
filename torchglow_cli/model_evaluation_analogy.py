@@ -4,7 +4,7 @@ import argparse
 import os
 from glob import glob
 from itertools import chain
-
+from copy import deepcopy
 import pandas as pd
 import torchglow
 
@@ -71,7 +71,7 @@ def main(model_type: str):
                     raise ValueError('unknown model type: {}'.format(model_type))
 
             for i in DATA:
-                tmp_result = model.parameter
+                tmp_result = deepcopy(model.parameter)
                 tmp_result['epoch'] = e
                 tmp_result['data'] = i
                 val, test = torchglow.util.get_analogy_dataset(i)
