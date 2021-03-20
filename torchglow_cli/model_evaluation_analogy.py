@@ -45,7 +45,7 @@ def main(model_type: str):
     base_prediction = torchglow.util.get_analogy_baseline()
     for checkpoint_path in checkpoint_paths:
         # all intermediate epoch
-        epochs = [i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(checkpoint_path))]
+        epochs = sorted([i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(checkpoint_path))])
         for e in epochs + [None]:
             if e is not None:
                 model = model_instance(checkpoint_path=checkpoint_path, checkpoint_option={'epoch': e})
@@ -119,13 +119,15 @@ def main(model_type: str):
                                           tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
                 result.append(tmp_result)
 
+            if len(result) > 3:
+                break
+
             del model
-        print(result)
-        input()
     # drop common config keys to keep only what different across models
-    # k = result[0].keys()
-    # k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
-    # result = [{_k: r[_k] for _k in k} for r in result]
+    k = result[0].keys()
+    k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
+    result = [{_k: r[_k] for _k in k} for r in result]
+    print(result)
 
     if opt.add_baseline:
         # add fasttext baseline
