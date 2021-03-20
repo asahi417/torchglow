@@ -120,14 +120,12 @@ def main(model_type: str):
                 result.append(tmp_result)
 
             del model
-        break
-
 
     # drop common config keys to keep only what different across models
     k = result[0].keys()
     k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
     result = [{_k: r[_k] for _k in k} for r in result]
-    print(result)
+    print(k)
 
     if opt.add_baseline:
         # add fasttext baseline
