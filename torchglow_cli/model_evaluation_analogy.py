@@ -45,8 +45,9 @@ def main(model_type: str):
     base_prediction = torchglow.util.get_analogy_baseline()
     for checkpoint_path in checkpoint_paths:
         # all intermediate epoch
-        epochs = sorted([i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(checkpoint_path))])
-        for e in epochs + [None]:
+        epochs = sorted([int(i.split('model.')[-1].replace('.pt', ''))
+                         for i in glob('{}/model.*.pt'.format(checkpoint_path))])
+        for e in epochs:
             model = model_instance(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
 
             def get_word_pairs(word_pairs):
