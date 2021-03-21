@@ -130,10 +130,6 @@ class InvertibleConv2d(nn.Module):
             if log_det is not None:
                 log_det = log_det + flag * self.log_s.sum() * pixels(x)
             if reverse:
-                # if NO_DOUBLE_PRECISION is not None:
-                # lu_l = torch.inverse(lu_l)
-                # lu_u = torch.inverse(lu_u)
-                # else:
                 lu_l = torch.inverse(lu_l.double()).float()
                 lu_u = torch.inverse(lu_u.double()).float()
                 weight = torch.matmul(lu_u, torch.matmul(lu_l, self.p.inverse()))
@@ -143,8 +139,8 @@ class InvertibleConv2d(nn.Module):
         else:
             if log_det is not None:
                 # log_det = log|abs(|W|)| * pixels
-                print(self.weight)
-                input()
+                # print(self.weight)
+                # input()
                 log_det = log_det + flag * torch.slogdet(self.weight)[1] * pixels(x)
             if reverse:
                 # if NO_DOUBLE_PRECISION is not None:
