@@ -149,7 +149,7 @@ class GlowBase(nn.Module):
             optimizer_stat = torch.load(optimizer_path, map_location=torch.device('cpu'))
             self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
             self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
-            self.epoch_elapsed = int(optimizer_stat['epoch_elapsed'])
+            self.epoch_elapsed = int(optimizer_stat['epoch_elapsed']) + 1
         else:
             self.epoch_elapsed = 0
         # GPU mixture precision
