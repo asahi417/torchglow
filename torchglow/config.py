@@ -24,10 +24,6 @@ class Config:
                 '{}/model.*.pt'.format(self.cache_dir))]
             self.path_model = {e: '{}/model.{}.pt'.format(self.cache_dir, e) for e in self.epoch_saved}
             self.path_optimizer = {e: '{}/optimizer.{}.pt'.format(self.cache_dir, e) for e in self.epoch_saved}
-            # self.model_weight_path_inter = {k.split('model.')[-1].replace('.pt', ''): k
-            #                                 for k in glob('{}/model.*.pt'.format(self.cache_dir))}
-            # self.optimizer_path_inter = {k.split('optimizer.')[-1].replace('.pt', ''): k
-            #                              for k in glob('{}/optimizer.*.pt'.format(self.cache_dir))}
         else:
             assert export_dir, 'either `export_dir` or `checkpoint_path` is required'
             self.config = kwargs
@@ -52,10 +48,6 @@ class Config:
     def is_trained(self):
         return self.path_model
 
-    # @property
-    # def is_fully_trained(self):
-    #     return self.epoch_elapsed >= self.epoch
-
     def __cache_init(self):
         if not os.path.exists('{}/config.json'.format(self.cache_dir)):
             os.makedirs(self.cache_dir, exist_ok=True)
@@ -68,14 +60,6 @@ class Config:
              optimizer_state_dict,
              scheduler_state_dict):
         logging.info('saving model weight/optimizer at {}'.format(self.cache_dir))
-        # torch.save(model_state_dict, self.model_weight_path)
-        # if optimizer_state_dict and scheduler_state_dict:
-        #     torch.save({
-        #         'optimizer_state_dict': optimizer_state_dict,
-        #         'scheduler_state_dict': scheduler_state_dict,
-        #         'epoch_elapsed': epoch
-        #     }, self.optimizer_path)
-        # else:
         torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
         torch.save({
             'optimizer_state_dict': optimizer_state_dict,

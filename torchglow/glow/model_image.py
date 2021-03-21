@@ -1,7 +1,5 @@
 """ Glow for 2D image data_iterator """
-import os
 import logging
-from typing import Dict
 
 import torch
 
@@ -129,7 +127,7 @@ class Glow(GlowBase):
             additive_coupling=self.config.additive_coupling
         )
         # for multi GPUs
-        self.model = torch.nn.parallel.DistributedDataParallel(self.model)
+        self.model = torch.nn.DataParallel(self.model)
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
