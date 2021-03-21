@@ -28,9 +28,9 @@ setup(
     include_package_data=True,
     test_suite='tests',
     install_requires=[
-        "torch==1.7.1",
+        "torch",
         "tqdm",
-        "torchvision==0.8.2",
+        "torchvision",
         "keras",
         "requests",
         "tfrecord",
