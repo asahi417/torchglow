@@ -57,7 +57,8 @@ class GlowBase(nn.Module):
             Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
         """
         # assert not self.config.is_trained, 'model has already been trained'
-        assert not self.epoch_elapsed < self.config.epoch, 'model has been trained over all epochs already.'
+        assert self.epoch_elapsed is None or not self.epoch_elapsed < self.config.epoch,\
+            'model has been trained over all epochs already.'
         batch_valid = self.config.batch if batch_valid is None else batch_valid
         writer = SummaryWriter(log_dir=self.config.cache_dir)
 
@@ -66,7 +67,7 @@ class GlowBase(nn.Module):
 
         logging.debug('loading data iterator')
         data_train, data_valid = self.setup_data()
-        if self.epoch_elapsed == 0 or self.epoch_elapsed is None:
+        if self.epoch_elapsed == 0:
             logging.debug('data-dependent initialization')
             loader = torch.utils.data.DataLoader(
                 data_train, batch_size=self.config.batch_init, shuffle=True)
