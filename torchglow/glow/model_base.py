@@ -26,6 +26,7 @@ class GlowBase(nn.Module):
         self.n_bins = None  # for image input
         self.converter = None  # for preprocessing such as BERT embedding
         self.data_format = None  # for fasttext data_format
+        self.epoch_elapsed = None
 
     @property
     def parameter(self):
@@ -56,7 +57,7 @@ class GlowBase(nn.Module):
             Epoch to run validation eg) Every 100000 epoch, it will save model weight as default.
         """
         # assert not self.config.is_trained, 'model has already been trained'
-        assert not self.config.is_fully_trained, 'model was fully trained over all epochs'
+        assert not self.epoch_elapsed < self.config.epoch, 'model has been trained over all epochs already.'
         batch_valid = self.config.batch if batch_valid is None else batch_valid
         writer = SummaryWriter(log_dir=self.config.cache_dir)
 
@@ -87,7 +88,7 @@ class GlowBase(nn.Module):
 
         try:
             with torch.cuda.amp.autocast(enabled=fp16):
-                for e in range(self.config.epoch_elapsed, self.config.epoch):  # loop over the epoch
+                for e in range(self.epoch_elapsed, self.config.epoch):  # loop over the epoch
 
                     mean_bpd = self.train_single_epoch(
                         loader, epoch_n=e, progress_interval=progress_interval, writer=writer)
@@ -144,20 +145,15 @@ class GlowBase(nn.Module):
             num_training_steps=self.config.epoch if self.config.decay_lr else None)
         # load from existing config
         if self.config.is_trained:
-            if self.checkpoint_epoch is not None:
-                optimizer_path = self.config.optimizer_path_inter[self.checkpoint_epoch]
-            else:
-                optimizer_path = self.config.optimizer_path
+            optimizer_path = self.config.optimizer_path_inter[self.checkpoint_epoch]
             optimizer_stat = torch.load(optimizer_path, map_location=torch.device('cpu'))
             self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
             self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
+            self.epoch_elapsed = int(optimizer_stat['epoch_elapsed'])
+        else:
+            self.epoch_elapsed = 0
         # GPU mixture precision
         self.scaler = torch.cuda.amp.GradScaler(enabled=fp16)
-        # multi-gpus
-        if self.n_gpu > 1:
-            # multi-gpu training (should be after apex fp16 initialization)
-            self.model = torch.nn.DataParallel(self.model)
-            logging.info('using `torch.nn.DataParallel`')
 
     def data_dependent_initialization(self, data_loader):
         with torch.no_grad():

@@ -36,10 +36,10 @@ class GlowFasttext(GlowBase):
                  optimizer: str = 'adamax',
                  momentum: float = 0.9,
                  checkpoint_path: str = None,
-                 checkpoint_option: Dict = None,
                  unit_gaussian: bool = False,
                  additive_coupling: bool = False,
-                 cache_dir: str = None):
+                 cache_dir: str = None,
+                 checkpoint_epoch: int = None):
         """ Glow on 1D Word Embeddings
 
         Parameters
@@ -120,23 +120,24 @@ class GlowFasttext(GlowBase):
             unit_gaussian=self.config.unit_gaussian,
             additive_coupling=self.config.additive_coupling
         )
+        # for multi GPUs
+        self.model = torch.nn.parallel.DistributedDataParallel(self.model)
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
 
         self.checkpoint_dir = self.config.cache_dir
-        self.checkpoint_option = checkpoint_option
         self.checkpoint_epoch = None
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
-            if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
-                self.checkpoint_epoch = self.checkpoint_option['epoch']
-                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_option['epoch']]
-            elif not os.path.exists(self.config.model_weight_path):
-                self.checkpoint_epoch = str(sorted([int(k) for k in self.config.model_weight_path_inter.keys()])[-1])
-                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_epoch]
+            if checkpoint_epoch is not None:
+                self.checkpoint_epoch = checkpoint_epoch
+                model_weight_path = self.config.path_model[self.checkpoint_epoch]
             else:
-                model_weight_path = self.config.model_weight_path
+                # use the longest trained model
+                self.checkpoint_epoch = sorted(list(self.config.path_model.keys()))[-1]
+                model_weight_path = self.config.path_model[self.checkpoint_epoch]
+
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # model on gpu

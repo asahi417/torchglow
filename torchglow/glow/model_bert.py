@@ -41,8 +41,8 @@ class GlowBERT(GlowBase):
                  unit_gaussian: bool = True,
                  additive_coupling: bool = False,
                  checkpoint_path: str = None,
-                 checkpoint_option: Dict = None,
-                 cache_dir: str = None):
+                 cache_dir: str = None,
+                 checkpoint_epoch: int = None):
         """ Glow on BERT Embeddings
 
         Parameters
@@ -128,27 +128,29 @@ class GlowBERT(GlowBase):
             unit_gaussian=self.config.unit_gaussian,
             additive_coupling=self.config.additive_coupling
         )
+        # for multi GPUs
+        self.model = torch.nn.parallel.DistributedDataParallel(self.model)
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
+
         self.checkpoint_dir = self.config.cache_dir
-        self.checkpoint_option = checkpoint_option
         self.checkpoint_epoch = None
         if self.config.is_trained:
             logging.info('loading weight from {}'.format(self.config.cache_dir))
-            if self.checkpoint_option is not None and 'epoch' in self.checkpoint_option.keys():
-                self.checkpoint_epoch = self.checkpoint_option['epoch']
-                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_option['epoch']]
-            elif not os.path.exists(self.config.model_weight_path):
-                self.checkpoint_epoch = str(sorted([int(k) for k in self.config.model_weight_path_inter.keys()])[-1])
-                model_weight_path = self.config.model_weight_path_inter[self.checkpoint_epoch]
+            if checkpoint_epoch is not None:
+                self.checkpoint_epoch = checkpoint_epoch
+                model_weight_path = self.config.path_model[self.checkpoint_epoch]
             else:
-                model_weight_path = self.config.model_weight_path
+                # use the longest trained model
+                self.checkpoint_epoch = sorted(list(self.config.path_model.keys()))[-1]
+                model_weight_path = self.config.path_model[self.checkpoint_epoch]
+
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # model on gpu
         self.model.to(self.device)
-        logging.info('GlowBERT running on {} GPUs'.format(self.n_gpu))
+        logging.info('Glow running on {} GPUs'.format(self.n_gpu))
 
     def setup_data(self):
         """ Initialize training dataset. """
