@@ -145,7 +145,7 @@ class GlowBase(nn.Module):
             num_training_steps=self.config.epoch if self.config.decay_lr else None)
         # load from existing config
         if self.config.is_trained:
-            optimizer_path = self.config.optimizer_path_inter[self.checkpoint_epoch]
+            optimizer_path = self.config.path_optimizer[self.checkpoint_epoch]
             optimizer_stat = torch.load(optimizer_path, map_location=torch.device('cpu'))
             self.optimizer.load_state_dict(optimizer_stat['optimizer_state_dict'])
             self.scheduler.load_state_dict(optimizer_stat['scheduler_state_dict'])
