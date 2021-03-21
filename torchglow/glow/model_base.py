@@ -119,8 +119,7 @@ class GlowBase(nn.Module):
             self.model.state_dict(),
             optimizer_state_dict=self.optimizer.state_dict(),
             scheduler_state_dict=self.scheduler.state_dict(),
-            epoch=e,
-            last_model=True)
+            epoch=e)
         logging.info('complete training: model ckpt was saved at {}'.format(self.config.cache_dir))
 
     def setup_optimizer(self, fp16):
