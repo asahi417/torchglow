@@ -148,6 +148,7 @@ class InvertibleConv2d(nn.Module):
                 # if NO_DOUBLE_PRECISION is not None:
                 # weight = torch.inverse(self.weight).view(self.w_shape[0], self.w_shape[1], 1, 1)
                 # else:
+                print(self.weight)
                 weight = torch.inverse(self.weight.double()).float().view(self.w_shape[0], self.w_shape[1], 1, 1)
             else:
                 weight = self.weight.view(self.w_shape[0], self.w_shape[1], 1, 1)
