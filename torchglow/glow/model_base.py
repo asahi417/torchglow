@@ -66,7 +66,7 @@ class GlowBase(nn.Module):
 
         logging.debug('loading data iterator')
         data_train, data_valid = self.setup_data()
-        if self.config.epoch_elapsed == 0:
+        if self.epoch_elapsed == 0 or self.epoch_elapsed is None:
             logging.debug('data-dependent initialization')
             loader = torch.utils.data.DataLoader(
                 data_train, batch_size=self.config.batch_init, shuffle=True)
