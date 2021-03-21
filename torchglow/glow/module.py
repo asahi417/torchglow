@@ -120,6 +120,7 @@ class InvertibleConv2d(nn.Module):
             self.weight = nn.Parameter(torch.Tensor(w_init))
             self.log_s = self.lu_u = self.lu_l = self.lu_p = self.eye = self.sign_s = self.l_mask = None
         self.lu_decomposition = lu_decomposition
+        print(self.weight)
 
     def forward(self, x, log_det=None, reverse: bool = False):
         flag = -1 if reverse else 1
@@ -146,10 +147,9 @@ class InvertibleConv2d(nn.Module):
                 log_det = log_det + flag * torch.slogdet(self.weight)[1] * pixels(x)
             if reverse:
                 # if NO_DOUBLE_PRECISION is not None:
-                # weight = torch.inverse(self.weight).view(self.w_shape[0], self.w_shape[1], 1, 1)
+                weight = torch.inverse(self.weight).view(self.w_shape[0], self.w_shape[1], 1, 1)
                 # else:
-                print(self.weight)
-                weight = torch.inverse(self.weight.double()).float().view(self.w_shape[0], self.w_shape[1], 1, 1)
+                # weight = torch.inverse(self.weight.double()).float().view(self.w_shape[0], self.w_shape[1], 1, 1)
             else:
                 weight = self.weight.view(self.w_shape[0], self.w_shape[1], 1, 1)
         z = conv2d(x, weight)
