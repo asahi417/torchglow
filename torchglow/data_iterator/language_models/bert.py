@@ -94,15 +94,25 @@ class BERT:
         self.cache_dir = cache_dir
         self.mode = mode
         self.embedding_layers = [embedding_layers] if type(embedding_layers) is not list else embedding_layers
-        self.config = transformers.AutoConfig.from_pretrained(
-            self.model_name, cache_dir=self.cache_dir, output_hidden_states=True)
+        try:
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(model, cache_dir=cache_dir)
+        except ValueError:
+            self.tokenizer = transformers.AutoTokenizer.from_pretrained(model, cache_dir=cache_dir, local_files_only=True)
+        try:
+            self.config = transformers.AutoConfig.from_pretrained(model, output_hidden_states=True, cache_dir=cache_dir)
+        except ValueError:
+            self.config = transformers.AutoConfig.from_pretrained(model, output_hidden_states=True, cache_dir=cache_dir, local_files_only=True)
+        try:
+            self.model = transformers.AutoModelForMaskedLM.from_pretrained(
+                self.model_name, config=self.config, cache_dir=self.cache_dir)
+        except ValueError:
+            self.model = transformers.AutoModelForMaskedLM.from_pretrained(
+                self.model_name, config=self.config, cache_dir=self.cache_dir, local_files_only=True)
+
         self.hidden_size = self.config.hidden_size
         self.num_hidden_layers = self.config.num_hidden_layers
         self.max_length = max_length
 
-        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_name, cache_dir=self.cache_dir)
-        self.model = transformers.AutoModelForMaskedLM.from_pretrained(
-            self.model_name, config=self.config, cache_dir=self.cache_dir)
         self.model.eval()
         # GPU setup
         self.device = 'cuda' if torch.cuda.device_count() > 0 else 'cpu'
