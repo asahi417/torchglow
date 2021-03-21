@@ -70,20 +70,20 @@ class Config:
              last_model: bool = False):
         logging.info('saving model weight in {}'.format(self.cache_dir))
         if last_model:
-            with open('{}/config_train.json'.format(self.cache_dir), 'w') as f:
-                json.dump({'epoch_elapsed': epoch + 1}, f)
             torch.save(model_state_dict, self.model_weight_path)
             if optimizer_state_dict and scheduler_state_dict:
                 torch.save({
                     'optimizer_state_dict': optimizer_state_dict,
-                    'scheduler_state_dict': scheduler_state_dict
+                    'scheduler_state_dict': scheduler_state_dict,
+                    'epoch_elapsed': epoch
                 }, self.optimizer_path)
         else:
             torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
             if optimizer_state_dict and scheduler_state_dict:
                 torch.save({
                     'optimizer_state_dict': optimizer_state_dict,
-                    'scheduler_state_dict': scheduler_state_dict
+                    'scheduler_state_dict': scheduler_state_dict,
+                    'epoch_elapsed': epoch
                 }, '{}/optimizer.{}.pt'.format(self.cache_dir, epoch))
 
     @staticmethod

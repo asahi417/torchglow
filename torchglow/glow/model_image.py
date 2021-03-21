@@ -144,6 +144,8 @@ class Glow(GlowBase):
                 model_weight_path = self.config.model_weight_path_inter[self.checkpoint_epoch]
             else:
                 model_weight_path = self.config.model_weight_path
+            print(model_weight_path)
+            input()
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # model on gpu

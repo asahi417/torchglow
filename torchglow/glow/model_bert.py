@@ -150,7 +150,6 @@ class GlowBERT(GlowBase):
         self.model.to(self.device)
         logging.info('GlowBERT running on {} GPUs'.format(self.n_gpu))
 
-
     def setup_data(self):
         """ Initialize training dataset. """
         return get_dataset_word_pairs(self.data_iterator,  validation_rate=self.config.validation_rate)
