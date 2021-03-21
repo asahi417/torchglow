@@ -145,8 +145,9 @@ class Glow(GlowBase):
             else:
                 model_weight_path = self.config.model_weight_path
             print(model_weight_path)
-            input()
+            self.model = torch.nn.DataParallel(self.model)
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
+            input()
 
         # model on gpu
         self.model.to(self.device)
