@@ -47,11 +47,7 @@ def main(model_type: str):
         # all intermediate epoch
         epochs = sorted([i.split('model.')[-1].replace('.pt', '') for i in glob('{}/model.*.pt'.format(checkpoint_path))])
         for e in epochs + [None]:
-            if e is not None:
-                model = model_instance(checkpoint_path=checkpoint_path, checkpoint_option={'epoch': e})
-            else:
-                model = model_instance(checkpoint_path=checkpoint_path)
-                e = model.config.epoch_elapsed
+            model = model_instance(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
 
             def get_word_pairs(word_pairs):
                 all_pairs = list(chain(*[[o['stem']] + o['choice'] for o in word_pairs]))
