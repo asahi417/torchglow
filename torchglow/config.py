@@ -20,7 +20,9 @@ class Config:
             assert os.path.exists(checkpoint_path), checkpoint_path
             self.config = self.safe_open('{}/config.json'.format(checkpoint_path))
             self.cache_dir = checkpoint_path
-            self.epoch_elapsed = self.safe_open('{}/config_train.json'.format(checkpoint_path))['epoch_elapsed']
+            if os.path.exists('{}/config_train.json'.format(checkpoint_path)):
+                self.epoch_elapsed = self.safe_open('{}/config_train.json'.format(checkpoint_path))['epoch_elapsed']
+            self.epoch_elapsed = None
         else:
             assert export_dir, 'either `export_dir` or `checkpoint_path` is required'
             self.config = kwargs

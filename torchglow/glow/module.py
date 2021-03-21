@@ -2,6 +2,7 @@
 - `GlowNetwork`: For 2D input such as image.
 - `GlowNetwork1D`: For 1D input such as embedding from w2v or BERT
 """
+import os
 from typing import List
 from scipy import linalg
 import torch
@@ -11,6 +12,8 @@ from torch.nn.functional import conv2d
 
 __all__ = ('GlowNetwork', 'GlowNetwork1D')
 EPS = 1e-5
+
+NO_DOUBLE_PRECISION = os.getenv('TORCHGLOW_NO_DOUBLE_PRECISION', None)
 
 
 def pixels(tensor: torch.Tensor):
@@ -127,10 +130,12 @@ class InvertibleConv2d(nn.Module):
             if log_det is not None:
                 log_det = log_det + flag * self.log_s.sum() * pixels(x)
             if reverse:
-                # lu_l = torch.inverse(lu_l.double()).float()
-                lu_l = torch.inverse(lu_l)
-                # lu_u = torch.inverse(lu_u.double()).float()
-                lu_u = torch.inverse(lu_u)
+                if NO_DOUBLE_PRECISION is not None:
+                    lu_l = torch.inverse(lu_l)
+                    lu_u = torch.inverse(lu_u)
+                else:
+                    lu_l = torch.inverse(lu_l.double()).float()
+                    lu_u = torch.inverse(lu_u.double()).float()
                 weight = torch.matmul(lu_u, torch.matmul(lu_l, self.p.inverse()))
             else:
                 weight = torch.matmul(self.lu_p, torch.matmul(lu_l, lu_u))
@@ -140,8 +145,10 @@ class InvertibleConv2d(nn.Module):
                 # log_det = log|abs(|W|)| * pixels
                 log_det = log_det + flag * torch.slogdet(self.weight)[1] * pixels(x)
             if reverse:
-                # weight = torch.inverse(self.weight.double()).float().view(self.w_shape[0], self.w_shape[1], 1, 1)
-                weight = torch.inverse(self.weight).view(self.w_shape[0], self.w_shape[1], 1, 1)
+                if NO_DOUBLE_PRECISION is not None:
+                    weight = torch.inverse(self.weight).view(self.w_shape[0], self.w_shape[1], 1, 1)
+                else:
+                    weight = torch.inverse(self.weight.double()).float().view(self.w_shape[0], self.w_shape[1], 1, 1)
             else:
                 weight = self.weight.view(self.w_shape[0], self.w_shape[1], 1, 1)
         z = conv2d(x, weight)
