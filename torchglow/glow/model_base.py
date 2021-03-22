@@ -87,32 +87,28 @@ class GlowBase(nn.Module):
         else:
             loader_valid = None
 
-        try:
-            with torch.cuda.amp.autocast(enabled=fp16):
-                for e in range(self.epoch_elapsed, self.config.epoch):  # loop over the epoch
+        with torch.cuda.amp.autocast(enabled=fp16):
+            for e in range(self.epoch_elapsed, self.config.epoch):  # loop over the epoch
 
-                    mean_bpd = self.train_single_epoch(
-                        loader, epoch_n=e, progress_interval=progress_interval, writer=writer)
-                    inst_lr = self.optimizer.param_groups[0]['lr']
-                    logging.info('[epoch {}/{}] average bpd: {}, lr: {}'.format(
-                        e, self.config.epoch, round(mean_bpd, 3), inst_lr))
+                mean_bpd = self.train_single_epoch(
+                    loader, epoch_n=e, progress_interval=progress_interval, writer=writer)
+                inst_lr = self.optimizer.param_groups[0]['lr']
+                logging.info('[epoch {}/{}] average bpd: {}, lr: {}'.format(
+                    e, self.config.epoch, round(mean_bpd, 3), inst_lr))
 
-                    if e % epoch_valid == 0 and e != 0 and loader_valid is not None:
-                        logging.debug('running validation')
-                        mean_bpd = self.valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
-                        logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(
-                            e, self.config.epoch, round(mean_bpd, 3)))
+                if e % epoch_valid == 0 and e != 0 and loader_valid is not None:
+                    logging.debug('running validation')
+                    mean_bpd = self.valid_single_epoch(loader_valid, epoch_n=e, writer=writer)
+                    logging.info('[epoch {}/{}] average bpd: {} (valid)'.format(
+                        e, self.config.epoch, round(mean_bpd, 3)))
 
-                    if e % epoch_save == 0 and e != 0:
-                        self.config.save(self.model.state_dict(),
-                                         optimizer_state_dict=self.optimizer.state_dict(),
-                                         scheduler_state_dict=self.scheduler.state_dict(),
-                                         epoch=e)
+                if e % epoch_save == 0 and e != 0:
+                    self.config.save(self.model.state_dict(),
+                                     optimizer_state_dict=self.optimizer.state_dict(),
+                                     scheduler_state_dict=self.scheduler.state_dict(),
+                                     epoch=e)
 
-                    self.scheduler.step()
-
-        except KeyboardInterrupt:
-            logging.info('*** KeyboardInterrupt ***')
+                self.scheduler.step()
 
         writer.close()
         self.config.save(
