@@ -159,7 +159,10 @@ class GlowBERT(GlowBase):
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
 
-    def embed(self, data: List, batch: int = None):
+    def embed(self, data: List, batch: int = None, return_original_embedding: bool = False):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        return self.embed_base(data, batch)
+        latent_variable, bert_embedding = self.embed_base(data, batch)
+        if return_original_embedding:
+            return latent_variable, bert_embedding
+        return latent_variable

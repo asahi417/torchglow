@@ -29,10 +29,15 @@ def diff(list_a, list_b):
 def main(model_type: str):
     argument_parser = argparse.ArgumentParser(description='Model evaluation on analogy test.')
     argument_parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
-    argument_parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/{}/*'.format(model_type), type=str)
+    argument_parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/{}/*'.format(model_type),
+                                 type=str)
     argument_parser.add_argument('-o', '--output-dir', help='directory to export model weight file',
                                  default='./eval_output/{}/analogy_result.csv'.format(model_type), type=str)
-    argument_parser.add_argument('--add-baseline', help='add baseline result', action='store_true')
+    # argument_parser.add_argument('--add-baseline', help='add baseline result', action='store_true')
+    # for BERT baseline
+    argument_parser.add_argument('--lm-model', help='language model', default='roberta-large', type=str)
+    argument_parser.add_argument('--lm-max-length', help='length', default=32, type=int)
+    argument_parser.add_argument('--lm-embedding-layers', help='embedding layers in LM', default='-1,-2', type=str)
     opt = argument_parser.parse_args()
     checkpoint_paths = glob(opt.checkpoint_path)
     result = []
@@ -74,10 +79,11 @@ def main(model_type: str):
                 val, test = torchglow.util.get_analogy_dataset(i)
                 # cache embedding
                 data = get_word_pairs(val + test)
-                vector = model.embed(data, batch=opt.batch)
-                latent_dict = {str(k): v for k, v in zip(data, vector)}
+                vector, vector_original = model.embed(data, batch=opt.batch, return_original_embedding=True)
+                latent_dict_normalized = {str(k): v for k, v in zip(data, vector)}
+                latent_dict_original = {str(k): v for k, v in zip(data, vector_original)}
 
-                def get_prediction(single_data):
+                def get_prediction(single_data, latent_dict):
                     """ OOV should only happen in `fasttext` of `pair` format. """
                     if model_type == 'fasttext':
                         if model.data_format == 'fasttext':
@@ -107,13 +113,22 @@ def main(model_type: str):
                     return pred
 
                 for prefix, data in zip(['test', 'valid'], [test, val]):
-                    prediction = [get_prediction(o) for o in data]
-                    tmp_result['oov_{}'.format(prefix)] = len([p for p in prediction if p is None])
-                    prediction = [p if p is not None else base_prediction[i][prefix][n] for n, p in enumerate(prediction)]
-                    accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
-                    tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy)/len(accuracy)
+                    prediction_norm = [get_prediction(o, latent_dict_normalized) for o in data]
+                    prediction_org = [get_prediction(o, latent_dict_original) for o in data]
+
+                    tmp_result['oov_{}'.format(prefix)] = len([p for p in prediction_norm if p is None])
+                    prediction_norm = [p if p is not None else base_prediction[i][prefix][n]
+                                       for n, p in enumerate(prediction_norm)]
+                    prediction_org = [p if p is not None else base_prediction[i][prefix][n]
+                                      for n, p in enumerate(prediction_org)]
+                    accuracy_norm = [o['answer'] == p for o, p in zip(data, prediction_norm)]
+                    accuracy_org = [o['answer'] == p for o, p in zip(data, prediction_org)]
+                    tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy_norm)/len(accuracy_norm)
+                    tmp_result['accuracy_{}_original'.format(prefix)] = sum(accuracy_org) / len(accuracy_org)
                 tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
                                           tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
+                tmp_result['accuracy_original'] = (tmp_result['accuracy_test_original'] * len(test) +
+                                                   tmp_result['accuracy_valid_original'] * len(val)) / (len(val) + len(test))
                 result.append(tmp_result)
 
             del model
@@ -122,27 +137,29 @@ def main(model_type: str):
     k = result[0].keys()
     k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
     result = [{_k: r[_k] for _k in k} for r in result]
-    print(k)
 
-    if opt.add_baseline:
-        # add fasttext baseline
-        logging.info('fetch fasttext baseline')
-        for baseline in ['fasttext_diff', 'concat_relative_fasttext', 'relative_init']:
-            base_prediction = torchglow.util.get_analogy_baseline(baseline)
-            for i in DATA:
-                tmp_result = {k_: None for k_ in k}
-                tmp_result['model_type'] = 'baseline.' + baseline
-                tmp_result['data'] = i
-                val, test = torchglow.util.get_analogy_dataset(i)
-                for prefix, data in zip(['test', 'valid'], [test, val]):
-                    prediction = base_prediction[i][prefix]
-                    accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
-                    tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy) / len(accuracy)
-                tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
-                                          tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
-                result.append(tmp_result)
+    # if opt.add_baseline:
+    #     # add fasttext baseline
+    #     logging.info('fetch fasttext baseline')
+    #     for baseline in ['fasttext_diff', 'concat_relative_fasttext', 'relative_init']:
+    #         base_prediction = torchglow.util.get_analogy_baseline(baseline)
+    #         for i in DATA:
+    #             tmp_result = {k_: None for k_ in k}
+    #             tmp_result['model_type'] = 'baseline.' + baseline
+    #             tmp_result['data'] = i
+    #             val, test = torchglow.util.get_analogy_dataset(i)
+    #             for prefix, data in zip(['test', 'valid'], [test, val]):
+    #                 prediction = base_prediction[i][prefix]
+    #                 accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
+    #                 tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy) / len(accuracy)
+    #             tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
+    #                                       tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
+    #             result.append(tmp_result)
 
     df = pd.DataFrame(result)
+    if os.path.exists(opt.output_dir):
+        tmp = pd.read_csv(opt.output_dir, index_col=0)
+        df = pd.concat([tmp, df])
     os.makedirs(os.path.dirname(opt.output_dir), exist_ok=True)
     df.to_csv(opt.output_dir)
 

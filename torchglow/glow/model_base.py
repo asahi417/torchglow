@@ -209,10 +209,12 @@ class GlowBase(nn.Module):
         batch = batch if batch is not None else self.config.batch
         data_loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
         latent_variable = []
+        converted_input = []
         with torch.no_grad():
             for x in data_loader:
                 if self.converter is not None:
                     x = self.converter(x)
+                converted_input += x.cpu().tolist()
                 if type(x) is not torch.Tensor:
                     x = x[0]
                 x = x.to(self.device)
@@ -221,7 +223,7 @@ class GlowBase(nn.Module):
                     latent_variable += [z_.cpu().tolist() for z_ in z]
                 else:
                     latent_variable += z.cpu().tolist()
-        return latent_variable
+        return latent_variable, converted_input
 
     def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
         self.model.train()

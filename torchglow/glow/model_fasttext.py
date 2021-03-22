@@ -157,10 +157,13 @@ class GlowFasttext(GlowBase):
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
 
-    def embed(self, data: List, batch: int = None, flatten: bool = True):
+    def embed(self, data: List, batch: int = None, return_original_embedding: bool = False):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
-        return self.embed_base(data, batch)
+        latent_variable, ft_embedding = self.embed_base(data, batch)
+        if return_original_embedding:
+            return latent_variable, ft_embedding
+        return latent_variable
 
     @property
     def vocab(self):
