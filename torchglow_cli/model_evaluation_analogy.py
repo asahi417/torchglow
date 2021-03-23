@@ -82,6 +82,10 @@ def main(model_type: str):
                 vector, vector_original = model.embed(data, batch=opt.batch, return_original_embedding=True)
                 latent_dict_normalized = {str(k): v for k, v in zip(data, vector)}
                 latent_dict_original = {str(k): v for k, v in zip(data, vector_original)}
+                print(latent_dict_normalized)
+                input()
+                print(latent_dict_original)
+                input()
 
                 def get_prediction(single_data, latent_dict):
                     """ OOV should only happen in `fasttext` of `pair` format. """
