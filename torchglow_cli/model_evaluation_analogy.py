@@ -43,11 +43,13 @@ def main(model_type: str):
     else:
         raise ValueError('unknown model type: {}'.format(model_type))
     base_prediction = torchglow.util.get_analogy_baseline()
-    for checkpoint_path in checkpoint_paths:
+    for n, checkpoint_path in enumerate(checkpoint_paths):
+        logging.info('checkpoint: {}/{}'.format(n, len(checkpoint_paths)))
         # all intermediate epoch
         epochs = sorted([int(i.split('model.')[-1].replace('.pt', ''))
                          for i in glob('{}/model.*.pt'.format(checkpoint_path))])
         for e in epochs:
+            logging.info('\t epoch: {}/{}'.format(e, epochs))
             model = model_instance(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
 
             def get_word_pairs(word_pairs):
@@ -74,6 +76,7 @@ def main(model_type: str):
                 val, test = torchglow.util.get_analogy_dataset(i)
                 # cache embedding
                 data = get_word_pairs(val + test)
+                logging.info('\t cache embedding: {}'.format(i))
                 vector, vector_original = model.embed(data, batch=opt.batch, return_original_embedding=True)
                 latent_dict_normalized = {str(k): v for k, v in zip(data, vector)}
                 latent_dict_original = {str(k): v for k, v in zip(data, vector_original)}
