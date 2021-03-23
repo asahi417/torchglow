@@ -33,11 +33,6 @@ def main(model_type: str):
                                  type=str)
     argument_parser.add_argument('-o', '--output-dir', help='directory to export model weight file',
                                  default='./eval_output/{}/analogy_result.csv'.format(model_type), type=str)
-    # argument_parser.add_argument('--add-baseline', help='add baseline result', action='store_true')
-    # for BERT baseline
-    argument_parser.add_argument('--lm-model', help='language model', default='roberta-large', type=str)
-    argument_parser.add_argument('--lm-max-length', help='length', default=32, type=int)
-    argument_parser.add_argument('--lm-embedding-layers', help='embedding layers in LM', default='-1,-2', type=str)
     opt = argument_parser.parse_args()
     checkpoint_paths = glob(opt.checkpoint_path)
     result = []
