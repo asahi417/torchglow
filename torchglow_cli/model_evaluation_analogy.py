@@ -128,32 +128,17 @@ def main(model_type: str):
                                           tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
                 tmp_result['accuracy_original'] = (tmp_result['accuracy_test_original'] * len(test) +
                                                    tmp_result['accuracy_valid_original'] * len(val)) / (len(val) + len(test))
+                logging.info('\t accuracy org: {}'.format(tmp_result['accuracy_original']))
+                logging.info('\t accuracy norm: {}'.format(tmp_result['accuracy']))
                 result.append(tmp_result)
 
             del model
 
     # drop common config keys to keep only what different across models
-    k = result[0].keys()
-    k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
-    result = [{_k: r[_k] for _k in k} for r in result]
+    # k = result[0].keys()
+    # k = [k_ for k_ in k if len(set([a_[k_] for a_ in result])) > 1]
+    # result = [{_k: r[_k] for _k in k} for r in result]
 
-    # if opt.add_baseline:
-    #     # add fasttext baseline
-    #     logging.info('fetch fasttext baseline')
-    #     for baseline in ['fasttext_diff', 'concat_relative_fasttext', 'relative_init']:
-    #         base_prediction = torchglow.util.get_analogy_baseline(baseline)
-    #         for i in DATA:
-    #             tmp_result = {k_: None for k_ in k}
-    #             tmp_result['model_type'] = 'baseline.' + baseline
-    #             tmp_result['data'] = i
-    #             val, test = torchglow.util.get_analogy_dataset(i)
-    #             for prefix, data in zip(['test', 'valid'], [test, val]):
-    #                 prediction = base_prediction[i][prefix]
-    #                 accuracy = [o['answer'] == p for o, p in zip(data, prediction)]
-    #                 tmp_result['accuracy_{}'.format(prefix)] = sum(accuracy) / len(accuracy)
-    #             tmp_result['accuracy'] = (tmp_result['accuracy_test'] * len(test) +
-    #                                       tmp_result['accuracy_valid'] * len(val)) / (len(val) + len(test))
-    #             result.append(tmp_result)
 
     df = pd.DataFrame(result)
     if os.path.exists(opt.output_dir):
