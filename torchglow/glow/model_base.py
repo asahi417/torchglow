@@ -214,7 +214,7 @@ class GlowBase(nn.Module):
             for x in data_loader:
                 if self.converter is not None:
                     x = self.converter(x)
-                converted_input += x.cpu().tolist()
+                converted_input += x.reshape(len(x), -1).cpu().tolist()
                 if type(x) is not torch.Tensor:
                     x = x[0]
                 x = x.to(self.device)
