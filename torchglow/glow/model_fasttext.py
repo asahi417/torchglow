@@ -120,8 +120,6 @@ class GlowFasttext(GlowBase):
             unit_gaussian=self.config.unit_gaussian,
             additive_coupling=self.config.additive_coupling
         )
-        # for multi GPUs
-        self.model = torch.nn.DataParallel(self.model)
         # model size
         model_size = sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         logging.info('{}M trainable parameters'.format(round(model_size/10**6, 4)))
@@ -139,6 +137,12 @@ class GlowFasttext(GlowBase):
                 model_weight_path = self.config.path_model[self.checkpoint_epoch]
 
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
+
+        # for multi GPUs
+        self.parallel = False
+        if torch.cuda.device_count() > 1:
+            self.parallel = True
+            self.model = torch.nn.DataParallel(self.model)
 
         # model on gpu
         self.model.to(self.device)

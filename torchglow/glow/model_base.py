@@ -27,6 +27,7 @@ class GlowBase(nn.Module):
         self.converter = None  # for preprocessing such as BERT embedding
         self.data_format = None  # for fasttext data_format
         self.epoch_elapsed = None
+        self.parallel = False
 
     @property
     def parameter(self):
@@ -103,7 +104,11 @@ class GlowBase(nn.Module):
                         e, self.config.epoch, round(mean_bpd, 3)))
 
                 if e % epoch_save == 0 and e != 0:
-                    self.config.save(self.model.state_dict(),
+                    if self.parallel:
+                        state = self.model.module.state_dict()
+                    else:
+                        state = self.model.state_dict()
+                    self.config.save(state,
                                      optimizer_state_dict=self.optimizer.state_dict(),
                                      scheduler_state_dict=self.scheduler.state_dict(),
                                      epoch=e)
@@ -111,8 +116,12 @@ class GlowBase(nn.Module):
                 self.scheduler.step()
 
         writer.close()
+        if self.parallel:
+            state = self.model.module.state_dict()
+        else:
+            state = self.model.state_dict()
         self.config.save(
-            self.model.state_dict(),
+            state,
             optimizer_state_dict=self.optimizer.state_dict(),
             scheduler_state_dict=self.scheduler.state_dict(),
             epoch=e+1)
