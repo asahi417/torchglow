@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 from tfrecord.torch.dataset import TFRecordDataset
 
-from torchglow.util import open_compressed_file
+from util import wget
 
 # The original processed data_iterator used in Glow paper
 URLS = {'celeba': 'https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar'}
@@ -70,7 +70,7 @@ class Dataset(torch.utils.data.Dataset):
 
         # download celeba tfrecord files
         if not os.path.exists(tfrecord_dir):
-            open_compressed_file(URLS[data], root)
+            wget(URLS[data], root)
         self.tfr_files = sorted(glob('{}/*.tfrecords'.format(tfrecord_dir)))
 
         # create unique index
