@@ -3,6 +3,7 @@ import os
 import pickle
 import tarfile
 import zipfile
+import gzip
 import requests
 import json
 from typing import List
@@ -13,9 +14,9 @@ import torch
 from torch.optim.lr_scheduler import LambdaLR
 
 
-def open_compressed_file(url, cache_dir, filename: str = None):
+def wget(url, cache_dir: str, gdrive_filename: str = None):
     """ wget and uncompress data_iterator """
-    path = wget(url, cache_dir, filename=filename)
+    path = _wget(url, cache_dir, gdrive_filename=gdrive_filename)
     if path.endswith('.tar.gz') or path.endswith('.tgz') or path.endswith('.tar'):
         if path.endswith('.tar'):
             tar = tarfile.open(path)
@@ -23,19 +24,24 @@ def open_compressed_file(url, cache_dir, filename: str = None):
             tar = tarfile.open(path, "r:gz")
         tar.extractall(cache_dir)
         tar.close()
+        os.remove(path)
+    elif path.endswith('.gz'):
+        with gzip.open(path, 'rb') as f:
+            with open(path.replace('.gz', ''), 'wb') as f_write:
+                f_write.write(f.read())
+        os.remove(path)
     elif path.endswith('.zip'):
         with zipfile.ZipFile(path, 'r') as zip_ref:
             zip_ref.extractall(cache_dir)
+        os.remove(path)
 
 
-def wget(url: str, cache_dir, filename: str = None):
-    """ wget """
+def _wget(url: str, cache_dir, gdrive_filename: str = None):
+    """ get data from web """
     os.makedirs(cache_dir, exist_ok=True)
     if url.startswith('https://drive.google.com'):
-        if filename:
-            return gdown.download(url, '{}/{}'.format(cache_dir, filename), quiet=False)
-        else:
-            return gdown.download(url, cache_dir, quiet=False)
+        assert gdrive_filename is not None, 'please provide fileaname for gdrive download'
+        return gdown.download(url, '{}/{}'.format(cache_dir, gdrive_filename), quiet=False)
     filename = os.path.basename(url)
     with open('{}/{}'.format(cache_dir, filename), "wb") as f:
         r = requests.get(url)

@@ -10,7 +10,7 @@ import numpy as np
 from gensim.models import KeyedVectors, fasttext
 
 from .language_models import BERT
-from ..util import open_compressed_file, load_pickle, word_pair_format
+from ..util import wget, load_pickle, word_pair_format
 
 CACHE_DIR = '{}/.cache/torchglow/word_embedding'.format(os.path.expanduser('~'))
 COMMON_WORD_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word.pkl'
@@ -46,13 +46,13 @@ def get_dataset(data_iterator,
     if data_name == 'common_word':
         path_data = '{}/common_word.pkl'.format(CACHE_DIR)
         if not os.path.exists(path_data):
-            open_compressed_file(COMMON_WORD_URL, CACHE_DIR)
+            wget(COMMON_WORD_URL, CACHE_DIR)
         data = load_pickle(path_data)
         random.Random(0).shuffle(data)
     elif data_name == 'common_pair_word':
         path_data = '{}/common_word_pairs.pkl'.format(CACHE_DIR)
         if not os.path.exists(path_data):
-            open_compressed_file(COMMON_WORD_PAIRS_URL, CACHE_DIR)
+            wget(COMMON_WORD_PAIRS_URL, CACHE_DIR)
         data = load_pickle(path_data)
         random.Random(0).shuffle(data)
 
@@ -128,7 +128,7 @@ def get_iterator_word_embedding(model_type: str):
     model_path_bin = '{}/{}'.format(CACHE_DIR, filename).replace('.tar.gz', '').replace('.zip', '.bin').replace('.gz', '')
     if not os.path.exists(model_path_bin):
         logging.debug('downloading word embedding model from {}'.format(url))
-        open_compressed_file(url, CACHE_DIR, filename=filename)
+        wget(url, CACHE_DIR, gdrive_filename=filename)
 
     if model_type == 'fasttext':
         model = fasttext.load_facebook_model(model_path_bin)
