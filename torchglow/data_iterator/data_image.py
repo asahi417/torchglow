@@ -169,8 +169,8 @@ def get_image_decoder(n_bits_x: int = 8):
         def single_img(v_):
             v_ = v_.permute(1, 2, 0)  # CHW -> HWC
             img = (((v_ + .5) * n_bins).round() * (256 / n_bins)).clip(0, 255)
-            img.
-            astype('uint8')
+            # img.
+            # astype('uint8')
             # if type(v_) is torch.Tensor:
             #     if return_pil:
             #     v_ = v_.cpu().numpy()
