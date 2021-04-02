@@ -159,21 +159,27 @@ def get_image_decoder(n_bits_x: int = 8):
     """ Get tensor decoder to get image. """
     n_bins = 2 ** n_bits_x
 
-    def convert_tensor_to_img(v, pil: bool = True):
+    def convert_tensor_to_img(v):
         """ decoder to recover image from tensor """
+        if type(v) is torch.Tensor:
+            v = [v]
+        assert type(v) is list, 'input should be a list of tensor'
+        #     v = torch.stack(v)
 
         def single_img(v_):
-            v_ = v_.transpose(1, 2, 0)  # CHW -> HWC
-            img = (((v_ + .5) * n_bins).round(0) * (256 / n_bins)).clip(0, 255).astype('uint8')
-            if pil:
-                img = Image.fromarray(img, 'RGB')
+            v_ = v_.permute(1, 2, 0)  # CHW -> HWC
+            img = (((v_ + .5) * n_bins).round() * (256 / n_bins)).clip(0, 255)
+            img.
+            astype('uint8')
+            # if type(v_) is torch.Tensor:
+            #     if return_pil:
+            #     v_ = v_.cpu().numpy()
+            #     if pil:
+            #         img = Image.fromarray(img, 'RGB')
             return img
 
-        if type(v) is torch.Tensor:
-            v = v.cpu().numpy()
-        assert v.ndim in [3, 4], v.shape
-        if v.ndim == 3:
-            return single_img(v)
+        # assert v.ndim in [3, 4], v.shape
+
         return [single_img(_v) for _v in v]
 
     return convert_tensor_to_img

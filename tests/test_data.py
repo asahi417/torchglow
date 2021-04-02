@@ -6,18 +6,16 @@ import shutil
 import random
 
 import torch
+import torchvision
 import numpy as np
-from torchglow.data_iterator import get_dataset_image, get_image_decoder, get_dataset_word_pairs, get_iterator_fasttext, get_iterator_bert
+from torchglow.util import fix_seed
+from torchglow.data_iterator import get_dataset_image, get_image_decoder
 
-
-def fix_seed(seed=12):
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
+# torchvision.utils.save_image()
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
-n_img = 5
+n_img = 16
 
 
 def get_image(images, decoder, data):
@@ -38,16 +36,23 @@ class Test(unittest.TestCase):
             fix_seed()
             logging.info('get loader: {}'.format(data))
             decoder = get_image_decoder()
-            train, val = get_dataset_image(data)
-            logging.info('initialize iterator')
-            train = iter(train)
+            _, val = get_dataset_image(data)
             val = iter(val)
-            logging.info('generating images')
+            images = []
             for i in range(n_img):
-                img = next(train)[0]
-                decoder(img).save('./tests/img/test_data/{}.train.{}.png'.format(data, i))
-                img = next(val)[0]
-                decoder(img).save('./tests/img/test_data/{}.valid.{}.png'.format(data, i))
+                x, y = next(val)
+                images.append(x)
+
+            image_tensor_batch = decoder(images)
+            torchvision.utils.save_image(
+                image_tensor_batch,
+                './tests/img/test_data/{}.png'.format(data)
+                          # nrow=12
+                )
+            # .save('./tests/img/test_data/{}.train.{}.png'.format(data, i))
+            # img = next(val)[0]
+            # decoder(img).save('./tests/img/test_data/{}.valid.{}.png'.format(data, i))
+            input()
 
         fix_seed()
         train, val = get_dataset_image('celeba', image_size=64, n_bits_x=5)
@@ -57,25 +62,25 @@ class Test(unittest.TestCase):
             img = next(val)[0]
             decoder(img).save('./tests/img/test_data/{}.valid.{}.transform.png'.format(data, i))
 
-    def test_bert(self):
-        for model in ['roberta-large', 'bert-large-cased']:
-            (iterator, _), dim = get_iterator_bert(model, mode='mask')
-            logging.info('\t hidden dimension: {}'.format(dim))
-            get_dataset_word_pairs(iterator, data_format='bert')
-
-            # for future bertflow implementation
-            # (iterator, _), dim = get_iterator_bert(model, mode='cls')
-
-    def test_fasttext(self):
-        for model in ['fasttext']:
-            iterator, dim = get_iterator_fasttext(model)
-            logging.info('\t hidden dimension: {}'.format(dim))
-            get_dataset_word_pairs(iterator, data_format='fasttext')
-
-        for model in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
-            iterator, _ = get_iterator_fasttext(model)
-            logging.info('\t hidden dimension: {}'.format(dim))
-            get_dataset_word_pairs(iterator, data_format='relative')
+    # def test_bert(self):
+    #     for model in ['roberta-large', 'bert-large-cased']:
+    #         (iterator, _), dim = get_iterator_bert(model, mode='mask')
+    #         logging.info('\t hidden dimension: {}'.format(dim))
+    #         get_dataset_word_pairs(iterator, data_format='bert')
+    #
+    #         # for future bertflow implementation
+    #         # (iterator, _), dim = get_iterator_bert(model, mode='cls')
+    #
+    # def test_fasttext(self):
+    #     for model in ['fasttext']:
+    #         iterator, dim = get_iterator_fasttext(model)
+    #         logging.info('\t hidden dimension: {}'.format(dim))
+    #         get_dataset_word_pairs(iterator, data_format='fasttext')
+    #
+    #     for model in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+    #         iterator, _ = get_iterator_fasttext(model)
+    #         logging.info('\t hidden dimension: {}'.format(dim))
+    #         get_dataset_word_pairs(iterator, data_format='relative')
 
 
 if __name__ == "__main__":
