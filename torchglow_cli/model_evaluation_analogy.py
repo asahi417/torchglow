@@ -63,7 +63,8 @@ def main():
         epochs = sorted([int(i.split('model.')[-1].replace('.pt', '')) for i in glob('{}/model.*.pt'.format(checkpoint_path))])
         for e in epochs:
             logging.info('\t epoch: {}/{}'.format(e, epochs))
-            model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
+            with open('{}/config.json'.format(checkpoint_path), 'r') as f:
+                parameter = json.load(f)
             logging.info('\t * cache embedding for all words')
             path = '{}/analogy_cache.{}.json'.format(checkpoint_path, e)
             if os.path.exists(path):
@@ -72,6 +73,7 @@ def main():
                     latent_dict_normalized = tmp_['norm']
                     latent_dict_original = tmp_['org']
             else:
+                model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
                 whole_word_filtered = whole_word
                 if model.vocab is not None:
                     whole_word_filtered = list(filter(lambda x: x in model.vocab, whole_word))
@@ -80,9 +82,10 @@ def main():
                 latent_dict_original = {str(k): v for k, v in zip(whole_word_filtered, vector_original)}
                 with open(path, 'w') as f:
                     json.dump({'norm': latent_dict_normalized, 'org': latent_dict_original}, f)
+                del model
 
             for i in DATA:
-                tmp_result = deepcopy(model.parameter)
+                tmp_result = deepcopy(parameter)
                 tmp_result['epoch'] = e
                 tmp_result['data'] = i
 
