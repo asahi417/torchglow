@@ -133,6 +133,8 @@ def main():
             pred_org_test = tmp_result.pop('pred_org_test')
             pred_org_valid = tmp_result.pop('pred_org_valid')
             pred_norm_test = [pred_norm_test[k] for k in vocab_test]
+            print(pred_norm_test)
+            input()
             pred_norm_valid = [pred_norm_valid[k] for k in vocab_valid]
             pred_org_test = [pred_org_test[k] for k in vocab_test]
             pred_org_valid = [pred_org_valid[k] for k in vocab_valid]
