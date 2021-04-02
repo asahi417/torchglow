@@ -57,7 +57,7 @@ def config_bert(parser):
     return parser
 
 
-def config_fasttext(parser):
+def config_word(parser):
     parser.add_argument('-m', '--model-type', help='embedding model type (glove/fasttext/w2v)',
                         default='glove', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.0, type=float)
@@ -120,10 +120,10 @@ def main_bert():
     )
 
 
-def main_fasttext():
-    argument_parser = argparse.ArgumentParser(description='Train GlowFasttext model.')
+def main_word():
+    argument_parser = argparse.ArgumentParser(description='Train GlowWordEmbedding model.')
     argument_parser = config(argument_parser)
-    argument_parser = config_fasttext(argument_parser)
+    argument_parser = config_word(argument_parser)
     opt = argument_parser.parse_args()
 
     # logging
@@ -225,16 +225,3 @@ def main_image():
         epoch_save=opt.epoch_save
     )
 
-
-if __name__ == '__main__':
-    # remedy if the cli is not recognized by system
-    import os
-    _model_type = os.getenv('GLOW_MODEL', 'image')
-    if _model_type == 'image':
-        main_image()
-    elif _model_type == 'bert':
-        main_bert()
-    elif _model_type == 'fasttext':
-        main_fasttext()
-    else:
-        raise ValueError('unknown mode: {}'.format(sys.argv))

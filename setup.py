@@ -46,9 +46,9 @@ setup(
         'console_scripts': [
             'torchglow-train-image = torchglow_cli.model_training:main_image',
             'torchglow-train-bert = torchglow_cli.model_training:main_bert',
-            'torchglow-train-fasttext = torchglow_cli.model_training:main_fasttext',
+            'torchglow-train-word = torchglow_cli.model_training:main_word',
             'torchglow-eval-bert = torchglow_cli.model_evaluation_analogy:main_bert',
-            'torchglow-eval-fasttext = torchglow_cli.model_evaluation_analogy:main_fasttext'
+            'torchglow-eval-word = torchglow_cli.model_evaluation_analogy:main_word'
         ]
     }
 )

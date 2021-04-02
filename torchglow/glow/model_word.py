@@ -148,10 +148,10 @@ class GlowWordEmbedding(GlowBase):
         self.model.to(self.device)
         logging.info('GlowWordEmbedding running on {} GPUs'.format(self.n_gpu))
 
-        if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
-            self.data_format = 'relative'
-        else:
-            self.data_format = 'fasttext'
+        # if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
+        #     self.data_format = 'relative'
+        # else:
+        #     self.data_format = 'fasttext'
 
     def setup_data(self):
         """ Initialize training dataset. """
