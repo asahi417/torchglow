@@ -7,11 +7,41 @@ import gzip
 import requests
 import json
 from typing import List
+from copy import deepcopy
 
 import gdown
 import numpy as np
 import torch
 from torch.optim.lr_scheduler import LambdaLR
+
+
+def flatten_list(nested_list):
+    """Flatten an arbitrarily nested list, without recursion (to avoid
+    stack overflows). Returns a new list, the original list is unchanged.
+    >> list(flatten_list([1, 2, 3, [4], [], [[[[[[[[[5]]]]]]]]]]))
+    [1, 2, 3, 4, 5]
+    >> list(flatten_list([[1, 2], 3]))
+    [1, 2, 3]
+    """
+
+    def _flatten_list(_nested_list):
+        if type(_nested_list) is torch.Tensor:
+            _nested_list = _nested_list.cpu().tolist()
+        else:
+            _nested_list = deepcopy(_nested_list)
+
+        while _nested_list:
+            sublist = _nested_list.pop(0)
+
+            if type(sublist) is torch.Tensor:
+                sublist = sublist.cpu().tolist()
+
+            if isinstance(sublist, list):
+                _nested_list = sublist + _nested_list
+            else:
+                yield sublist
+
+    return list(_flatten_list(nested_list))
 
 
 def wget(url, cache_dir: str, gdrive_filename: str = None):

@@ -15,12 +15,11 @@ from torchglow.data_iterator import get_dataset_image, get_image_decoder
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
-n_img = 16
 
 
-def get_image(images, decoder, data):
-    for i in range(n_img):
-        decoder(images[i]).save('./tests/img/test_data/{}.{}.png'.format(data, i))
+# def get_image(images, decoder, data, n_img = 32):
+#     for i in range(n_img):
+#         decoder(images[i]).save('./tests/img/test_data/{}.{}.png'.format(data, i))
 
 
 class Test(unittest.TestCase):
@@ -36,31 +35,23 @@ class Test(unittest.TestCase):
             fix_seed()
             logging.info('get loader: {}'.format(data))
             decoder = get_image_decoder()
-            _, val = get_dataset_image(data)
-            val = iter(val)
+            dataset, _ = get_dataset_image(data)
+            dataset = iter(dataset)
             images = []
+            if data == 'cifar10':
+                n_img = 64
+            else:
+                n_img = 32
             for i in range(n_img):
-                x, y = next(val)
+                x, y = next(dataset)
                 images.append(x)
 
-            image_tensor_batch = decoder(images)
+            image_tensor_batch = decoder(images, keep_tensor=True)
             torchvision.utils.save_image(
                 image_tensor_batch,
-                './tests/img/test_data/{}.png'.format(data)
-                          # nrow=12
-                )
-            # .save('./tests/img/test_data/{}.train.{}.png'.format(data, i))
-            # img = next(val)[0]
-            # decoder(img).save('./tests/img/test_data/{}.valid.{}.png'.format(data, i))
-            input()
-
-        fix_seed()
-        train, val = get_dataset_image('celeba', image_size=64, n_bits_x=5)
-        decoder = get_image_decoder(n_bits_x=5)
-        val = iter(val)
-        for i in range(n_img):
-            img = next(val)[0]
-            decoder(img).save('./tests/img/test_data/{}.valid.{}.transform.png'.format(data, i))
+                './tests/img/test_data/{}.png'.format(data),
+                normalize=True,
+            )
 
     # def test_bert(self):
     #     for model in ['roberta-large', 'bert-large-cased']:

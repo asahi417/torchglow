@@ -628,6 +628,6 @@ class GlowNetwork1D(nn.Module):
                 else:
                     x, log_det = layer(x, log_det=log_det)
             (_, z) = x
-            z = z.reshape(len(z), -1)  # flatten CHW to 1D array
             nll = None if log_det is None else - log_det
+            z = z.reshape(len(z), -1)  # flatten CHW to 1D array
             return z, nll

@@ -2,6 +2,7 @@
 import logging
 
 import torch
+import torchvision
 
 from .model_base import GlowBase
 from .module import GlowNetwork
@@ -142,18 +143,7 @@ class Glow(GlowBase):
                 # use the longest trained model
                 self.checkpoint_epoch = sorted(list(self.config.path_model.keys()))[-1]
                 model_weight_path = self.config.path_model[self.checkpoint_epoch]
-
-            try:
-                self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
-            except Exception:
-                print()
-                print('UPDATING CHECKPOINT')
-                print()
-                self.model = torch.nn.DataParallel(self.model)
-                self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
-                self.config.save(self.model.module.state_dict(), epoch=self.checkpoint_epoch)
-                raise ValueError('DONE')
-
+            self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # for multi GPUs
         self.parallel = False
@@ -170,7 +160,25 @@ class Glow(GlowBase):
     def setup_data(self):
         """ Initialize training dataset. """
         return get_dataset_image(
-            self.config.data, cache_dir=self.cache_dir, n_bits_x=self.config.n_bits_x, image_size=self.config.image_size)
+            self.config.data, cache_dir=self.cache_dir, n_bits_x=self.config.n_bits_x,
+            image_size=self.config.image_size)
+
+    def generate(self, sample_size: int = 16, batch: int = 4, export_path: str = 'glow_generate_image.png',
+                 eps_std: float = 1):
+        """ Generate image from trained GLOW by sampling from learnt latent embedding. """
+        assert self.config.is_trained
+        self.model.eval()
+        decoder = get_image_decoder(n_bits_x=self.config.n_bits_x)
+        images = []
+        with torch.no_grad():
+            for _ in range(batch):
+                y, _ = self.model(sample_size=sample_size, reverse=True, return_loss=False, eps_std=eps_std)
+                images.append(y)
+        images = torch.cat(images)
+        images = decoder(images, keep_tensor=True)
+        torchvision.utils.save_image(images, export_path, normalize=True)
+        logging.info('Glow generated image saved at {}'.format(export_path))
+        return images
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         decoder = get_image_decoder(n_bits_x=self.config.n_bits_x)

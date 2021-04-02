@@ -1,12 +1,13 @@
 """ Base Glow Class """
 import logging
+from itertools import chain
 from math import log
 
 import torch
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
-from ..util import get_linear_schedule_with_warmup
+from ..util import get_linear_schedule_with_warmup, flatten_list
 
 __all__ = 'GlowBase'
 
@@ -28,6 +29,7 @@ class GlowBase(nn.Module):
         self.data_format = None  # for fasttext data_format
         self.epoch_elapsed = None
         self.parallel = False
+        self.data_iterator = None
 
     @property
     def parameter(self):
@@ -171,6 +173,29 @@ class GlowBase(nn.Module):
             x = x.to(self.device)
             self.model(x, return_loss=False, initialize_actnorm=True)
 
+    def embed_data(self, sample_size: int = 5, batch: int = 5):
+        """ Embed sample from validation set. """
+        assert self.config.is_trained, 'model is not trained'
+        data_train, data_valid = self.setup_data()
+        if data_valid is None:
+            data_valid = data_train
+        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
+        latent_vector = []
+
+        with torch.no_grad():
+            for x in loader:
+                if self.converter is not None:
+                    x = self.converter(x)
+                if type(x) is not torch.Tensor:
+                    x = x[0]
+                z, _ = self.model(x.to(self.device), return_loss=False)
+                if type(z) is torch.Tensor:
+                    z = z.cpu.tolist()
+                latent_vector += [flatten_list(_z) for _z in z]
+                if len(latent_vector) > sample_size:
+                    break
+        return latent_vector
+
     def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
         """ Reconstruct validation data_iterator """
         assert self.config.is_trained, 'model is not trained'
@@ -199,8 +224,8 @@ class GlowBase(nn.Module):
                     break
         return data_original[:sample_size], data_reconstruct[:sample_size]
 
-    def embed_base(self, data, batch: int = None):
-        """ Embed data into latent space.
+    def embed_base(self, data=None, batch: int = None):
+        """ Embed arbitrary input into latent space.
 
         Parameters
         ----------
@@ -216,6 +241,8 @@ class GlowBase(nn.Module):
         assert self.config.is_trained, 'model is not trained'
         self.model.eval()
         batch = batch if batch is not None else self.config.batch
+        if self.data_iterator is None:
+            raise ValueError('embedding arbitrary data is not supported in this model')
         data_loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
         latent_variable = []
         converted_input = []
