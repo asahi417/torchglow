@@ -111,7 +111,7 @@ def main():
                     tmp_result['oov_{}'.format(prefix)] = len([p for p in prediction_norm if p is None])
                     tmp_result['pred_norm_{}'.format(prefix)] = {n: o['answer'] == p for n, (o, p) in
                                                                  enumerate(zip(data, prediction_norm)) if p is not None}
-                    tmp_result['pred_org_{}'.format(prefix)] = {n: o['answer'] == p if p else None for n, (o, p) in
+                    tmp_result['pred_org_{}'.format(prefix)] = {n: o['answer'] == p for n, (o, p) in
                                                                 enumerate(zip(data, prediction_org)) if p is not None}
                 result.append(tmp_result)
                 break
