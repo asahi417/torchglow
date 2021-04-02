@@ -10,7 +10,7 @@ import torchvision.transforms as transforms
 from PIL import Image
 from tfrecord.torch.dataset import TFRecordDataset
 
-from util import wget
+from ..util import wget
 
 # The original processed data_iterator used in Glow paper
 URLS = {'celeba': 'https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar'}
