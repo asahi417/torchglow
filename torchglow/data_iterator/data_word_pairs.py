@@ -125,10 +125,6 @@ def get_iterator_word_embedding(model_type: str):
 
     # load embedding model
     url, filename = urls[model_type]
-    if model_type == 'concat_relative_fasttext':
-        filename = 'concat_relative_fasttext_vectors.bin.tar.gz'
-    else:
-        filename = os.path.basename(url)
     model_path_bin = '{}/{}'.format(CACHE_DIR, filename).replace('.tar.gz', '').replace('.zip', '.bin').replace('.gz', '')
     if not os.path.exists(model_path_bin):
         logging.debug('downloading word embedding model from {}'.format(url))

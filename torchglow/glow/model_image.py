@@ -143,7 +143,15 @@ class Glow(GlowBase):
                 self.checkpoint_epoch = sorted(list(self.config.path_model.keys()))[-1]
                 model_weight_path = self.config.path_model[self.checkpoint_epoch]
 
-            self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
+            try:
+                self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
+            except Exception:
+                self.model = torch.nn.DataParallel(self.model)
+                self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
+                self.config.save(self.model.module.state_dict(),
+                                 optimizer_state_dict=self.optimizer.state_dict(),
+                                 scheduler_state_dict=self.scheduler.state_dict(),
+                                 epoch=self.checkpoint_epoch)
 
         # for multi GPUs
         self.parallel = False
