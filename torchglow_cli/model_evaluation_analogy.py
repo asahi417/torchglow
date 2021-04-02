@@ -114,6 +114,7 @@ def main():
                     tmp_result['pred_org_{}'.format(prefix)] = {n: o['answer'] == p if p else None for n, (o, p) in
                                                                 enumerate(zip(data, prediction_org)) if p is not None}
                 result.append(tmp_result)
+                break
             break
 
     logging.info('** aggregate accuracy **')
@@ -132,12 +133,12 @@ def main():
             pred_norm_valid = tmp_result.pop('pred_norm_valid')
             pred_org_test = tmp_result.pop('pred_org_test')
             pred_org_valid = tmp_result.pop('pred_org_valid')
-            pred_norm_test = [pred_norm_test[k] for k in vocab_test]
+            pred_norm_test = [int(pred_norm_test[k]) for k in vocab_test]
             print(pred_norm_test)
             input()
-            pred_norm_valid = [pred_norm_valid[k] for k in vocab_valid]
-            pred_org_test = [pred_org_test[k] for k in vocab_test]
-            pred_org_valid = [pred_org_valid[k] for k in vocab_valid]
+            pred_norm_valid = [int(pred_norm_valid[k]) for k in vocab_valid]
+            pred_org_test = [int(pred_org_test[k]) for k in vocab_test]
+            pred_org_valid = [int(pred_org_valid[k]) for k in vocab_valid]
             tmp_result['accuracy_test'] = sum(pred_norm_test) / len(pred_norm_test)
             tmp_result['accuracy_valid'] = sum(pred_norm_valid) / len(pred_norm_valid)
             tmp_result['accuracy_test_original'] = sum(pred_org_test) / len(pred_org_test)
