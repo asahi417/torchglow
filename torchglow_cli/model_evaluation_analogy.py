@@ -114,7 +114,6 @@ def main():
                     tmp_result['pred_org_{}'.format(prefix)] = {n: o['answer'] == p if p else None for n, (o, p) in
                                                                 enumerate(zip(data, prediction_org)) if p is not None}
                 result.append(tmp_result)
-            del model
 
     logging.info('** aggregate accuracy **')
     for i in DATA:
