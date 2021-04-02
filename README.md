@@ -14,20 +14,20 @@ torchglow-train-image --num-workers 8 -s 50000
 
 ### Fasttext
 ```shell script
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 8 --unit-gaussian -m glove
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 6 --unit-gaussian -m glove
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 4 --unit-gaussian -m glove
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 2 --unit-gaussian -m glove
+
 torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 8 --unit-gaussian -m fasttext
 torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 6 --unit-gaussian -m fasttext
 torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 4 --unit-gaussian -m fasttext
 torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 2 --unit-gaussian -m fasttext
 
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 8 --unit-gaussian -m fasttext_diff
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 6 --unit-gaussian -m fasttext_diff
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 4 --unit-gaussian -m fasttext_diff
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 2 --unit-gaussian -m fasttext_diff
-
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 8 --unit-gaussian -m concat_relative_fasttext
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 6 --unit-gaussian -m concat_relative_fasttext
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 4 --unit-gaussian -m concat_relative_fasttext
-torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 2 --unit-gaussian -m concat_relative_fasttext
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 8 --unit-gaussian -m w2v
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 6 --unit-gaussian -m w2v
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 4 --unit-gaussian -m w2v
+torchglow-train-fasttext -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 131072 --batch-init 131072 --n-flow 2 --unit-gaussian -m w2v
 ```
 
 ### BERT
