@@ -57,15 +57,16 @@ class Config:
     def save(self,
              model_state_dict,
              epoch: int,
-             optimizer_state_dict,
-             scheduler_state_dict):
+             optimizer_state_dict=None,
+             scheduler_state_dict=None):
         logging.info('saving model weight/optimizer at {}'.format(self.cache_dir))
         torch.save(model_state_dict, '{}/model.{}.pt'.format(self.cache_dir, epoch))
-        torch.save({
-            'optimizer_state_dict': optimizer_state_dict,
-            'scheduler_state_dict': scheduler_state_dict,
-            'epoch_elapsed': epoch
-        }, '{}/optimizer.{}.pt'.format(self.cache_dir, epoch))
+        if optimizer_state_dict is not None or scheduler_state_dict is not None:
+            torch.save({
+                'optimizer_state_dict': optimizer_state_dict,
+                'scheduler_state_dict': scheduler_state_dict,
+                'epoch_elapsed': epoch
+            }, '{}/optimizer.{}.pt'.format(self.cache_dir, epoch))
 
     @staticmethod
     def get_random_string(exclude: List = None, length: int = 6):
