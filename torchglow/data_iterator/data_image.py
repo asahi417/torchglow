@@ -7,7 +7,7 @@ from glob import glob
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from PIL import Image
+# from PIL import Image
 from tfrecord.torch.dataset import TFRecordDataset
 
 from ..util import wget
@@ -146,9 +146,9 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
         t_train = transforms.Compose(t_train)
         t_valid = transforms.Compose(t_valid)
         train_set = Dataset(
-            '{}/celeba-tfr/train'.format(cache_dir), root=cache_dir, train=True, transform=t_train)
+            '{}/celeba-tfr/train'.format(cache_dir), root=cache_dir, train=True, transform=t_train, n_bits_x=n_bits_x)
         valid_set = Dataset(
-            '{}/celeba-tfr/validation'.format(cache_dir), root=cache_dir, train=False, transform=t_valid)
+            '{}/celeba-tfr/validation'.format(cache_dir), root=cache_dir, train=False, transform=t_valid, n_bits_x=n_bits_x)
     else:
         raise ValueError('unknown data_iterator: {}'.format(data))
     return train_set, valid_set

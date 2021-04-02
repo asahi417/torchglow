@@ -119,8 +119,11 @@ def main():
         tmp_results = list(filter(lambda x: x['data'] == i, result))
         d = [list(x['pred_norm_test'].keys()) for x in tmp_results]
         vocab_test = set(d[0]).intersection(*d[1:])
+        print([len(x['pred_norm_test'].keys()) for x in tmp_results])
+        print(len(vocab_test))
         d = [list(x['pred_norm_valid'].keys()) for x in tmp_results]
         vocab_valid = set(d[0]).intersection(*d[1:])
+
         for tmp_result in tmp_results:
             pred_norm_test = tmp_result.pop('pred_norm_test')
             pred_norm_valid = tmp_result.pop('pred_norm_valid')
