@@ -9,7 +9,7 @@ pip install git+https://github.com/asahi417/torchglow
 ## Experiment
 ### Glow on CIFAR10
 ```shell script
-torchglow-train-image --num-workers 8 -s 50000
+torchglow-train-image -s 50000 --batch 256 --batch-init 512 --decay-lr 
 ```
 
 ### Glow on Word Embedding
