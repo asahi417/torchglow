@@ -7,7 +7,7 @@ import torch
 from .model_base import GlowBase
 from .module import GlowNetwork1D
 from ..config import Config
-from ..data_iterator.data_word_pairs import get_dataset_word_pairs, get_iterator_bert
+from ..data_iterator.data_word_pairs import get_dataset, get_iterator_bert
 from ..util import fix_seed
 
 __all__ = 'GlowBERT'
@@ -161,7 +161,7 @@ class GlowBERT(GlowBase):
 
     def setup_data(self):
         """ Initialize training dataset. """
-        return get_dataset_word_pairs(self.data_iterator,  validation_rate=self.config.validation_rate)
+        return get_dataset(self.data_iterator, data_name='common_word_pair', validation_rate=self.config.validation_rate, relative_format=False)
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
