@@ -52,7 +52,7 @@ class GlowBERT(GlowBase):
         epoch : int
             Number of epochs.
         export_dir : str
-            Directory to ecxport model weight file.
+            Directory to export model weight file.
         batch : int
             The size of batch.
         lr : float

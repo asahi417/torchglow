@@ -2,7 +2,7 @@
 import os
 import random
 import logging
-from itertools import chain
+# from itertools import chain
 from typing import List
 
 import torch
@@ -13,48 +13,61 @@ from .language_models import BERT
 from ..util import open_compressed_file, load_pickle, word_pair_format
 
 CACHE_DIR = '{}/.cache/torchglow/word_embedding'.format(os.path.expanduser('~'))
-COMMON_WORD_PAIRS_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word_pairs.pkl.tar.gz'
+COMMON_WORD_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word.pkl'
+COMMON_WORD_PAIRS_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word_pairs.pkl'
+
+__all__ = ('get_dataset', 'get_iterator_word_embedding', 'get_iterator_bert')
 
 
-def get_dataset_word_pairs(data_iterator,
-                           parallel: bool = True,
-                           validation_rate: float = 0.2,
-                           data_format: str = 'bert'):
-    """ Get word pairs dataset iterator.
+def get_dataset(data_iterator,
+                data_name: str = 'common_word',
+                parallel: bool = True,
+                validation_rate: float = 0,
+                relative_format: bool = True):
+    """ Get word dataset iterator.
 
     Parameters
     ----------
     data_iterator : torch.utils.data.Dataset
         Iterator produced by `torchglow.data_iterator.get_iterator_bert` or `torchglow.data_iterator.get_iterator_fasttext`.
+    data_name : str
+        Data name ('common_word' or 'common_word_pair').
     parallel : bool
         Parallel processing.
     validation_rate : float
         Ratio of validation set.
-    data_format : str
-        If provided, convert each pair (A, B) to the format
-        - 'relative':  'A__B'
-        - 'fasttext': flatten all pair to be a list of individual words
-        - 'bert'    : ['A', 'B']
+    relative_format : bool
+        Convert each pair (A, B) to the relative embedding input format 'A__B'.
 
     Returns
     -------
     (iterator_train, iterator_valid)
     """
-    # download common-word-pairs data_iterator
-    path_data = '{}/common_word_pairs.pkl'.format(CACHE_DIR)
-    if not os.path.exists(path_data):
-        open_compressed_file(COMMON_WORD_PAIRS_URL, CACHE_DIR)
-    data = load_pickle(path_data)
-    random.Random(0).shuffle(data)
+    if data_name == 'common_word':
+        path_data = '{}/common_word.pkl'.format(CACHE_DIR)
+        if not os.path.exists(path_data):
+            open_compressed_file(COMMON_WORD_URL, CACHE_DIR)
+        data = load_pickle(path_data)
+        random.Random(0).shuffle(data)
+    elif data_name == 'common_pair_word':
+        path_data = '{}/common_word_pairs.pkl'.format(CACHE_DIR)
+        if not os.path.exists(path_data):
+            open_compressed_file(COMMON_WORD_PAIRS_URL, CACHE_DIR)
+        data = load_pickle(path_data)
+        random.Random(0).shuffle(data)
 
-    assert data_format in ['relative', 'fasttext', 'bert'], data_format
-    if data_format == 'relative':
-        # convert word pair to pair-format of relative embeddings
-        data = [word_pair_format(d) for d in data]
-    elif data_format == 'fasttext':
-        # convert word pair to word-level data_iterator
-        data = list(set(list(chain(*data))))
-
+        # assert data_format in ['relative', 'fasttext', 'bert'], data_format
+        if relative_format:
+            # convert word pair to pair-format of relative embeddings
+            data = [word_pair_format(d) for d in data]
+        # if data_format == 'relative':
+        #     # convert word pair to pair-format of relative embeddings
+        #     data = [word_pair_format(d) for d in data]
+        # elif data_format == 'fasttext':
+        #     # convert word pair to word-level data_iterator
+        #     data = list(set(list(chain(*data))))
+    else:
+        raise ValueError('unknown data: {}'.format(data_name))
     try:
         if data_iterator.model_vocab is not None:
             data = list(filter(lambda x: x in data_iterator.model_vocab, data))
@@ -92,32 +105,31 @@ def get_iterator_bert(model: str, max_length: int = 32, embedding_layers: List =
     return (lm.preprocess, lm.to_embedding), lm.hidden_size
 
 
-def get_iterator_fasttext(model_type: str):
+def get_iterator_word_embedding(model_type: str):
     """ Get data iterator with all pipelines required as preprocessing for word embedding.
 
     Parameters
     ----------
     model_type : str
-        Model type from `fasttext`, `relative_init`, `fasttext_diff`, or `concat_relative_fasttext`
+        Model type (glove, fasttext, w2v).
 
     Returns
     -------
     (torch.utils.data.Dataset, embedding dimension)
     """
     urls = {
-        'fasttext': 'https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M-subword.zip',
-        'relative_init': 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/relative_init_vectors.bin.tar.gz',
-        'fasttext_diff': 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/fasttext_diff_vectors.bin.tar.gz',
-        'concat_relative_fasttext': 'https://drive.google.com/u/0/uc?id=1CkdsxEl21TUiBmLS6uq55tH6SiHvWGDn&export=download',
+        'fasttext': ['https://dl.fbaipublicfiles.com/fasttext/vectors-english/crawl-300d-2M-subword.zip', 'crawl-300d-2M-subword.zip'],
+        'glove': ['https://drive.google.com/u/0/uc?id=1DbLuxwDlTRDbhBroOVgn2_fhVUQAVIqN&export=download', 'glove.840B.300d.gensim.bin.tar.gz'],
+        'w2v': ["https://drive.google.com/u/0/uc?id=0B7XkCwpI5KDYNlNUTTlSS21pQmM&export=download", 'GoogleNews-vectors-negative300.bin.gz']
     }
 
     # load embedding model
-    url = urls[model_type]
+    url, filename = urls[model_type]
     if model_type == 'concat_relative_fasttext':
         filename = 'concat_relative_fasttext_vectors.bin.tar.gz'
     else:
         filename = os.path.basename(url)
-    model_path_bin = '{}/{}'.format(CACHE_DIR, filename).replace('.tar.gz', '').replace('.zip', '.bin')
+    model_path_bin = '{}/{}'.format(CACHE_DIR, filename).replace('.tar.gz', '').replace('.zip', '.bin').replace('.gz', '')
     if not os.path.exists(model_path_bin):
         logging.debug('downloading word embedding model from {}'.format(url))
         open_compressed_file(url, CACHE_DIR, filename=filename)

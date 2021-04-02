@@ -7,17 +7,17 @@ import torch
 from .model_base import GlowBase
 from .module import GlowNetwork1D
 from ..config import Config
-from ..data_iterator.data_word_pairs import get_dataset_word_pairs, get_iterator_fasttext
+from ..data_iterator.data_word_pairs import get_dataset, get_iterator_word_embedding
 from ..util import fix_seed
 
-__all__ = 'GlowFasttext'
+__all__ = 'GlowWordEmbedding'
 
 
-class GlowFasttext(GlowBase):
+class GlowWordEmbedding(GlowBase):
     """ Glow on 1D Word Embeddings """
 
     def __init__(self,
-                 model_type: str = 'relative',
+                 model_type: str = 'glove',
                  validation_rate: float = 0.2,
                  training_step: int = None,
                  epoch: int = 1000,
@@ -45,7 +45,7 @@ class GlowFasttext(GlowBase):
         Parameters
         ----------
         model_type : str
-            Word embedding model type ('relative', 'diff_fasttext').
+            Word embedding model type ('glove'/'w2v'/'fasttext').
         validation_rate : float
             Ratio of validation set.
         training_step : int
@@ -81,7 +81,7 @@ class GlowFasttext(GlowBase):
         additive_coupling : bool
             Additive coupling instead of affine coupling.
         """
-        super(GlowFasttext, self).__init__()
+        super(GlowWordEmbedding, self).__init__()
         fix_seed(random_seed)
         self.cache_dir = cache_dir
         # config
@@ -109,7 +109,7 @@ class GlowFasttext(GlowBase):
             additive_coupling=additive_coupling
         )
         # get preprocessing module
-        self.data_iterator, self.hidden_size = get_iterator_fasttext(self.config.model_type)
+        self.data_iterator, self.hidden_size = get_iterator_word_embedding(self.config.model_type)
         # model
         self.model = GlowNetwork1D(
             n_channel=self.hidden_size,
@@ -146,7 +146,7 @@ class GlowFasttext(GlowBase):
 
         # model on gpu
         self.model.to(self.device)
-        logging.info('GlowFasttext running on {} GPUs'.format(self.n_gpu))
+        logging.info('GlowWordEmbedding running on {} GPUs'.format(self.n_gpu))
 
         if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
             self.data_format = 'relative'
@@ -155,8 +155,8 @@ class GlowFasttext(GlowBase):
 
     def setup_data(self):
         """ Initialize training dataset. """
-        return get_dataset_word_pairs(
-            self.data_iterator, validation_rate=self.config.validation_rate, data_format=self.data_format)
+        return get_dataset(
+            self.data_iterator, data_name='common_word', validation_rate=self.config.validation_rate)
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)

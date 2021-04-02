@@ -58,12 +58,11 @@ def config_bert(parser):
 
 
 def config_fasttext(parser):
-    parser.add_argument('-m', '--model-type', help='embedding model type (`relative`, `fasttext_diff`,'
-                                                   '`concat_relative_fasttext` `fasttext`, )',
-                        default='fasttext_diff', type=str)
+    parser.add_argument('-m', '--model-type', help='embedding model type (glove/fasttext/w2v)',
+                        default='glove', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.0, type=float)
-    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt/fasttext',
-                        type=str)
+    parser.add_argument('--export-dir', help='directory to export model weight file',
+                        default='./ckpt/glow_word_embedding', type=str)
     return parser
 
 
