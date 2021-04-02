@@ -1,5 +1,5 @@
 from .glow.model_image import Glow
-from .glow.model_word import GlowFasttext
+from .glow.model_word import GlowWordEmbedding
 from .glow.model_bert import GlowBERT
 from .data_iterator import language_models as lm
 from . import util, data_iterator

@@ -130,7 +130,7 @@ def main_fasttext():
     level = logging.DEBUG if opt.debug else logging.INFO
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
 
-    trainer = torchglow.GlowFasttext(
+    trainer = torchglow.GlowWordEmbedding(
         model_type=opt.model_type,
         validation_rate=opt.validation_rate,
         training_step=opt.training_step,
