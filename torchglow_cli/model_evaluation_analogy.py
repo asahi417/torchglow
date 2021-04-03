@@ -67,6 +67,7 @@ def main():
                 parameter = json.load(f)
             logging.info('\t * cache embedding for all words')
             path = '{}/analogy_cache.{}.json'.format(checkpoint_path, e)
+            print(path)
             if os.path.exists(path):
                 with open(path, 'r') as f:
                     tmp_ = json.load(f)
