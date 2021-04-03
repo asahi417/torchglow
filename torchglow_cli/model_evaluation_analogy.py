@@ -67,7 +67,6 @@ def main():
                 parameter = json.load(f)
             logging.info('\t * cache embedding for all words')
             path = '{}/analogy_cache.{}.json'.format(checkpoint_path, e)
-            print(path)
             if os.path.exists(path):
                 with open(path, 'r') as f:
                     tmp_ = json.load(f)
@@ -115,8 +114,6 @@ def main():
                     tmp_result['pred_org_{}'.format(prefix)] = {n: o['answer'] == p for n, (o, p) in
                                                                 enumerate(zip(data, prediction_org)) if p is not None}
                 result.append(tmp_result)
-                break
-            break
 
     logging.info('** aggregate accuracy **')
     for i in DATA:
@@ -139,7 +136,6 @@ def main():
             pred_norm_test = [int(pred_norm_test[k]) for k in vocab_test]
 
             pred_norm_valid = [int(pred_norm_valid[k]) for k in vocab_valid]
-            print([pred_org_test[k] for k in vocab_test])
             pred_org_test = [int(pred_org_test[k]) for k in vocab_test]
             pred_org_valid = [int(pred_org_valid[k]) for k in vocab_valid]
             tmp_result['accuracy_test'] = sum(pred_norm_test) / len(pred_norm_test)
