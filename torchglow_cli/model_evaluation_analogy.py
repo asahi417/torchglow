@@ -123,6 +123,7 @@ def main():
         val, test = torchglow.util.get_analogy_dataset(i)
         tmp_results = list(filter(lambda x: x['data'] == i, result))
         d = [list(x['pred_norm_test'].keys()) for x in tmp_results]
+        print([len(x['pred_norm_test'].keys()) for x in tmp_results])
         vocab_test = set(d[0]).intersection(*d[1:])
         print([len(x['pred_norm_test'].keys()) for x in tmp_results])
         print(len(vocab_test))
