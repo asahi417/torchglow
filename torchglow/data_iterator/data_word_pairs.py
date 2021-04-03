@@ -146,7 +146,8 @@ def get_iterator_word_embedding(model_type: str):
             return len(self.vocab)
 
         def __getitem__(self, idx):
-            tensor = torch.tensor(np.array(model.wv.__getitem__(self.vocab[idx])), dtype=torch.float32)
+            vector = model.wv.__getitem__(self.vocab[idx])
+            tensor = torch.tensor(np.array(vector), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1)  # return in CHW shape
 
     return Dataset, model.vector_size

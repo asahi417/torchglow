@@ -49,12 +49,6 @@ def main():
         whole_data += val + test
     whole_word = get_word_pairs(whole_data)
 
-    # # load model
-    # if model_type == 'glow_word_embedding':
-    #     model_instance = torchglow.GlowWordEmbedding
-    # else:
-    #     raise ValueError('unknown model type: {}'.format(model_type))
-
     logging.info('** cache prediction **')
     result = []
     for n, checkpoint_path in enumerate(checkpoint_paths):
@@ -120,11 +114,7 @@ def main():
         val, test = torchglow.util.get_analogy_dataset(i)
         tmp_results = list(filter(lambda x: x['data'] == i, result))
         d = [list(x['pred_norm_test'].keys()) for x in tmp_results]
-        print(i)
-        print([len(x['pred_norm_test'].keys()) for x in tmp_results])
         vocab_test = set(d[0]).intersection(*d[1:])
-        print([len(x['pred_norm_test'].keys()) for x in tmp_results])
-        print(len(vocab_test))
         d = [list(x['pred_norm_valid'].keys()) for x in tmp_results]
         vocab_valid = set(d[0]).intersection(*d[1:])
 

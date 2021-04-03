@@ -137,7 +137,7 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
 
     if data == 'cifar10':
         assert n_bits_x == 8, 'cifar10 does not support n_bits_x != 8'
-        # t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
+        t_train.append(transforms.RandomAffine(degrees=0, translate=(.1, .1)))  # add random shift
         t_train = transforms.Compose(t_train)
         t_valid = transforms.Compose(t_valid)
         train_set = torchvision.datasets.CIFAR10(root=cache_dir, train=True, download=True, transform=t_train)
