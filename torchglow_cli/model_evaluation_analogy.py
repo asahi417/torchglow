@@ -143,9 +143,9 @@ def main():
             logging.info('\t * accuracy norm: {}'.format(tmp_result['accuracy']))
 
     df = pd.DataFrame(result)
-    # if os.path.exists(opt.output_file):
-    #     tmp = pd.read_csv(opt.output_file, index_col=0)
-    #     df = pd.concat([tmp, df])
+    if os.path.exists(opt.output_file):
+        tmp = pd.read_csv(opt.output_file, index_col=0)
+        df = pd.concat([tmp, df])
     os.makedirs(os.path.dirname(opt.output_file), exist_ok=True)
     df.to_csv(opt.output_file)
     logging.info('result file exported to {}'.format(opt.output_file))
