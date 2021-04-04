@@ -83,7 +83,7 @@ def main():
             for i in DATA:
                 tmp_result = deepcopy(parameter)
                 tmp_result['epoch'] = e
-                tmp_result['data'] = i
+                tmp_result['analogy_data'] = i
 
                 # cache embedding
                 val, test = torchglow.util.get_analogy_dataset(i)
@@ -114,7 +114,7 @@ def main():
     logging.info('** aggregate accuracy **')
     for i in DATA:
         val, test = torchglow.util.get_analogy_dataset(i)
-        tmp_results = list(filter(lambda x: x['data'] == i, result))
+        tmp_results = list(filter(lambda x: x['analogy_data'] == i, result))
         d = [list(x['pred_norm_test'].keys()) for x in tmp_results]
         vocab_test = set(d[0]).intersection(*d[1:])
         d = [list(x['pred_norm_valid'].keys()) for x in tmp_results]
@@ -143,9 +143,9 @@ def main():
             logging.info('\t * accuracy norm: {}'.format(tmp_result['accuracy']))
 
     df = pd.DataFrame(result)
-    if os.path.exists(opt.output_file):
-        tmp = pd.read_csv(opt.output_file, index_col=0)
-        df = pd.concat([tmp, df])
+    # if os.path.exists(opt.output_file):
+    #     tmp = pd.read_csv(opt.output_file, index_col=0)
+    #     df = pd.concat([tmp, df])
     os.makedirs(os.path.dirname(opt.output_file), exist_ok=True)
     df.to_csv(opt.output_file)
     logging.info('result file exported to {}'.format(opt.output_file))
