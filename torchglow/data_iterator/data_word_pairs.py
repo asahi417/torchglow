@@ -10,11 +10,11 @@ import numpy as np
 from gensim.models import KeyedVectors, fasttext
 
 from .language_models import BERT
-from ..util import wget, load_pickle, word_pair_format
+from ..util import wget, load_pickle
 
 CACHE_DIR = '{}/.cache/torchglow/word_embedding'.format(os.path.expanduser('~'))
 COMMON_WORD_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word.pkl'
-COMMON_WORD_PAIRS_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word_pairs.pkl'
+COMMON_WORD_PAIRS_URL = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/common_word_pairs_truecase.pkl'
 
 __all__ = ('get_dataset', 'get_iterator_word_embedding', 'get_iterator_bert')
 
@@ -22,8 +22,7 @@ __all__ = ('get_dataset', 'get_iterator_word_embedding', 'get_iterator_bert')
 def get_dataset(data_iterator,
                 data_name: str = 'common_word',
                 parallel: bool = True,
-                validation_rate: float = 0,
-                relative_format: bool = True):
+                validation_rate: float = 0):
     """ Get word dataset iterator.
 
     Parameters
@@ -36,8 +35,6 @@ def get_dataset(data_iterator,
         Parallel processing.
     validation_rate : float
         Ratio of validation set.
-    relative_format : bool
-        Convert each pair (A, B) to the relative embedding input format 'A__B'.
 
     Returns
     -------
@@ -49,28 +46,20 @@ def get_dataset(data_iterator,
             wget(COMMON_WORD_URL, CACHE_DIR)
         data = load_pickle(path_data)
         random.Random(0).shuffle(data)
-    elif data_name == 'common_pair_word':
-        path_data = '{}/common_word_pairs.pkl'.format(CACHE_DIR)
+    elif data_name == 'common_word_pairs':
+        path_data = '{}/common_word_pairs_truecase.pkl'.format(CACHE_DIR)
         if not os.path.exists(path_data):
             wget(COMMON_WORD_PAIRS_URL, CACHE_DIR)
         data = load_pickle(path_data)
         random.Random(0).shuffle(data)
-
-        # assert data_format in ['relative', 'fasttext', 'bert'], data_format
-        if relative_format:
-            # convert word pair to pair-format of relative embeddings
-            data = [word_pair_format(d) for d in data]
-        # if data_format == 'relative':
-        #     # convert word pair to pair-format of relative embeddings
-        #     data = [word_pair_format(d) for d in data]
-        # elif data_format == 'fasttext':
-        #     # convert word pair to word-level data_iterator
-        #     data = list(set(list(chain(*data))))
     else:
         raise ValueError('unknown data: {}'.format(data_name))
     try:
+        # bert won't have the vocab variable in the class
         if data_iterator.model_vocab is not None:
-            data = list(filter(lambda x: x in data_iterator.model_vocab, data))
+            data = list(filter(lambda x: x in data_iterator.model_vocab if type(x) is str else
+                               all(_x in data_iterator.model_vocab for _x in x),
+                               data))
     except AttributeError:
         pass
 
@@ -139,14 +128,24 @@ def get_iterator_word_embedding(model_type: str):
         """ 1D data_iterator iterator with RELATIVE word embedding """
         model_vocab = set(model.vocab.keys()) if model_type != 'fasttext' else None
 
-        def __init__(self, vocab, **kwargs):
+        def __init__(self, vocab, *args, **kwargs):
             self.vocab = vocab
 
         def __len__(self):
             return len(self.vocab)
 
         def __getitem__(self, idx):
-            vector = model.wv.__getitem__(self.vocab[idx])
+            words = self.vocab[idx]
+            if type(words) is str:
+                # single word
+                vector = model.wv.__getitem__(str(words))
+            elif type(words) in [list, tuple]:
+                # vector difference of two words
+                assert len(words) == 2, 'n word is invalid: {} ({})'.format(len(words), words)
+                head, tail = words
+                vector = model.wv.__getitem__(str(head)) - model.wv.__getitem__(str(tail))
+            else:
+                raise TypeError('invalid type: {} ({})'.format(words, type(words)))
             tensor = torch.tensor(np.array(vector), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1)  # return in CHW shape
 

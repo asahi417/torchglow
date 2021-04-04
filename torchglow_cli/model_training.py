@@ -58,6 +58,7 @@ def config_bert(parser):
 
 
 def config_word(parser):
+    parser.add_argument('-d', '--data', help='dataset from `common_word`, `common_word_pairs`', default='common_word_pairs', type=str)
     parser.add_argument('-m', '--model-type', help='embedding model type (glove/fasttext/w2v)',
                         default='glove', type=str)
     parser.add_argument('--validation-rate', help='validation set ratio', default=0.0, type=float)
@@ -131,6 +132,7 @@ def main_word():
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
 
     trainer = torchglow.GlowWordEmbedding(
+        data=opt.data,
         model_type=opt.model_type,
         validation_rate=opt.validation_rate,
         training_step=opt.training_step,

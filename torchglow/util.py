@@ -160,6 +160,6 @@ def get_analogy_dataset(data_name: str):
     return val_set, test_set
 
 
-def word_pair_format(pair: List):
-    """ transform word pair into the format of relative format """
-    return '__'.join(pair).replace(' ', '_').lower()
+# def word_pair_format(pair: List):
+#     """ transform word pair into the format of relative format """
+#     return '__'.join(pair).replace(' ', '_').lower()

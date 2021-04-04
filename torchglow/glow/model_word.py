@@ -17,6 +17,7 @@ class GlowWordEmbedding(GlowBase):
     """ Glow on 1D Word Embeddings """
 
     def __init__(self,
+                 data: str = 'common_word_pairs',
                  model_type: str = 'glove',
                  validation_rate: float = 0.2,
                  training_step: int = None,
@@ -44,6 +45,8 @@ class GlowWordEmbedding(GlowBase):
 
         Parameters
         ----------
+        data : str
+            Glow training data ('common_word'/'common_word_pairs')
         model_type : str
             Word embedding model type ('glove'/'w2v'/'fasttext').
         validation_rate : float
@@ -86,6 +89,7 @@ class GlowWordEmbedding(GlowBase):
         self.cache_dir = cache_dir
         # config
         self.config = Config(
+            data=data,
             model_type=model_type,
             validation_rate=validation_rate,
             checkpoint_path=checkpoint_path,
@@ -148,15 +152,10 @@ class GlowWordEmbedding(GlowBase):
         self.model.to(self.device)
         logging.info('GlowWordEmbedding running on {} GPUs'.format(self.n_gpu))
 
-        # if self.config.model_type in ['relative_init', 'fasttext_diff', 'concat_relative_fasttext']:
-        #     self.data_format = 'relative'
-        # else:
-        #     self.data_format = 'fasttext'
-
     def setup_data(self):
         """ Initialize training dataset. """
         return get_dataset(
-            self.data_iterator, data_name='common_word', validation_rate=self.config.validation_rate)
+            self.data_iterator, data_name=self.config.data, validation_rate=self.config.validation_rate)
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
