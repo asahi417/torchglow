@@ -1,4 +1,6 @@
-""" Solve analogy task by word embedding model """
+""" Solve analogy task by word embedding model
+TODO: add option to apply random/false prediction for OOV entry
+"""
 import logging
 import argparse
 import os
@@ -139,7 +141,6 @@ def main():
                                                tmp_result['accuracy_valid_original'] * len(val)) / (len(val) + len(test))
             logging.info('\t * accuracy org : {}'.format(tmp_result['accuracy_original']))
             logging.info('\t * accuracy norm: {}'.format(tmp_result['accuracy']))
-            # result.append(tmp_result)
 
     df = pd.DataFrame(result)
     if os.path.exists(opt.output_file):

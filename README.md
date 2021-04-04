@@ -19,20 +19,13 @@ torchglow-train-image -d celeba -s 27000 --image-size 64 --batch 64 --batch-init
 
 ### Glow on Word Embedding
 ```shell script
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 8 --unit-gaussian -m glove
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 6 --unit-gaussian -m glove
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 4 --unit-gaussian -m glove
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 2 --unit-gaussian -m glove
+torchglow-train-word -e 45 --epoch-save 3 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 8 --unit-gaussian -m fasttext
+torchglow-train-word -e 45 --epoch-save 3 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 6 --unit-gaussian -m fasttext
+torchglow-train-word -e 45 --epoch-save 3 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 4 --unit-gaussian -m fasttext
 
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 8 --unit-gaussian -m fasttext
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 6 --unit-gaussian -m fasttext
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 4 --unit-gaussian -m fasttext
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 2 --unit-gaussian -m fasttext
-
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 8 --unit-gaussian -m w2v
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 6 --unit-gaussian -m w2v
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 4 --unit-gaussian -m w2v
-torchglow-train-word -e 45 --epoch-save 5 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 2 --unit-gaussian -m w2v
+torchglow-train-word -e 45 --epoch-save 3 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 8 --unit-gaussian -m w2v
+torchglow-train-word -e 45 --epoch-save 3 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 6 --unit-gaussian -m w2v
+torchglow-train-word -e 45 --epoch-save 3 --filter-size 32 --lr 0.0001 -b 262144 --batch-init 262144 --n-flow 4 --unit-gaussian -m w2v
 ```
 
 ## Evaluate
