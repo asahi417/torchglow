@@ -113,7 +113,8 @@ class GlowWordEmbedding(GlowBase):
             additive_coupling=additive_coupling
         )
         # get preprocessing module
-        self.data_iterator, self.hidden_size = get_iterator_word_embedding(self.config.model_type)
+        self.word_pair_input = True if self.config.data == 'common_word_pairs' else False
+        self.data_iterator, self.hidden_size = get_iterator_word_embedding(self.config.model_type, self.word_pair_input)
         # model
         self.model = GlowNetwork1D(
             n_channel=self.hidden_size,

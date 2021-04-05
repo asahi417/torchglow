@@ -94,7 +94,7 @@ def get_iterator_bert(model: str, max_length: int = 32, embedding_layers: List =
     return (lm.preprocess, lm.to_embedding), lm.hidden_size
 
 
-def get_iterator_word_embedding(model_type: str):
+def get_iterator_word_embedding(model_type: str, word_pair_input: bool):
     """ Get data iterator with all pipelines required as preprocessing for word embedding.
 
     Parameters
@@ -136,16 +136,15 @@ def get_iterator_word_embedding(model_type: str):
 
         def __getitem__(self, idx):
             words = self.vocab[idx]
-            if type(words) is str:
+            if word_pair_input:
                 # single word
+                assert type(words) is str
                 vector = model.wv.__getitem__(str(words))
-            elif type(words) in [list, tuple]:
+            else:
                 # vector difference of two words
-                assert len(words) == 2, 'n word is invalid: {} ({})'.format(len(words), words)
+                assert type(words) in [list, tuple] and len(words) == 2
                 head, tail = words
                 vector = model.wv.__getitem__(str(head)) - model.wv.__getitem__(str(tail))
-            else:
-                raise TypeError('invalid type: {} ({})'.format(words, type(words)))
             tensor = torch.tensor(np.array(vector), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1)  # return in CHW shape
 
