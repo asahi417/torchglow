@@ -137,14 +137,15 @@ def get_iterator_word_embedding(model_type: str, word_pair_input: bool):
         def __getitem__(self, idx):
             words = self.vocab[idx]
             if word_pair_input:
-                # single word
-                assert type(words) is str
-                vector = model.wv.__getitem__(str(words))
-            else:
                 # vector difference of two words
                 assert type(words) in [list, tuple] and len(words) == 2
                 head, tail = words
                 vector = model.wv.__getitem__(str(head)) - model.wv.__getitem__(str(tail))
+            else:
+                # single word
+                assert type(words) is str
+                vector = model.wv.__getitem__(str(words))
+
             tensor = torch.tensor(np.array(vector), dtype=torch.float32)
             return tensor.reshape(len(tensor), 1, 1)  # return in CHW shape
 
