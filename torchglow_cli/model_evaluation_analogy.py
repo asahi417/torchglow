@@ -135,6 +135,7 @@ def main_mc(opt):
                     whole_word = list(filter(lambda x: x[0] in model.vocab and x[1] in model.vocab, whole_word))
                 elif model.vocab is not None:
                     whole_word = list(filter(lambda x: x in model.vocab, whole_word))
+                print(whole_word[:10])
                 vector, vector_original = model.embed(whole_word, batch=opt.batch, return_original_embedding=True)
                 latent_dict_normalized = {str(k): v for k, v in zip(whole_word, vector)}
                 latent_dict_original = {str(k): v for k, v in zip(whole_word, vector_original)}
