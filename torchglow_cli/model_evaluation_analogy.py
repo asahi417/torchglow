@@ -48,9 +48,6 @@ def main():
 def main_flat(opt):
     checkpoint_paths = glob(opt.checkpoint_path)
     test = torchglow.util.get_google_analogy_test()
-    whole_word = list(chain(*test.values()))
-
-    logging.info('** cache prediction **')
     result = []
     for n, checkpoint_path in enumerate(checkpoint_paths):
         logging.info('checkpoint: {}/{}'.format(n, len(checkpoint_paths)))
@@ -69,7 +66,6 @@ def main_flat(opt):
                 logging.info('\t * skip as is trained on word pair')
                 continue
             logging.info('\t * compute accuracy')
-            accuracy = {}
             out_all = []
             for k, parent_values in test.items():
                 logging.info('\t\t * relation: {}'.format(k))
@@ -135,7 +131,9 @@ def main_mc(opt):
             else:
                 model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
                 whole_word = get_word_pairs(whole_data, model.word_pair_input)
-                if model.vocab is not None:
+                if model.word_pair_input and model.vocab is not None:
+                    whole_word = list(filter(lambda x: x[0] in model.vocab and x[1] in model.vocab, whole_word))
+                elif model.vocab is not None:
                     whole_word = list(filter(lambda x: x in model.vocab, whole_word))
                 vector, vector_original = model.embed(whole_word, batch=opt.batch, return_original_embedding=True)
                 latent_dict_normalized = {str(k): v for k, v in zip(whole_word, vector)}
