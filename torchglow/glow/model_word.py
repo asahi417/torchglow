@@ -181,7 +181,7 @@ class GlowWordEmbedding(GlowBase):
                             num_workers: int = 0):
         assert self.config.is_trained, 'model is not trained'
         assert not self.word_pair_input, 'model with word pair input is not allowed'
-        if output_path.endswith('.bin'):
+        if not output_path.endswith('.bin'):
             output_path = output_path + '.bin'
         logging.debug('generating embedding for all vocab')
         data_train, _ = self.setup_data(validation_rate=0)
