@@ -35,7 +35,7 @@ def diff(list_a, list_b):
 
 def main():
     argument_parser = argparse.ArgumentParser(description='Model evaluation on analogy test.')
-    argument_parser.add_argument('-b', '--batch', help='batch size', default=262144, type=int)
+    argument_parser.add_argument('-b', '--batch', help='batch size', default=1048576, type=int)
     argument_parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/glow_word_embedding/*',
                                  type=str)
     argument_parser.add_argument('-o', '--output-file', help='directory to export model weight file',

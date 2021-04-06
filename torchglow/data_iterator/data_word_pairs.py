@@ -137,7 +137,12 @@ def get_iterator_word_embedding(model_type: str, word_pair_input: bool = False):
             return len(self.vocab)
 
         def __getitem__(self, idx):
-            words = self.vocab[idx]
+            try:
+                words = self.vocab[idx]
+            except IndexError:
+                print(idx)
+                print(len(self.vocab))
+                words = self.vocab[idx]
             if word_pair_input:
                 # vector difference of two words
                 assert type(words) in [list, tuple] and len(words) == 2
