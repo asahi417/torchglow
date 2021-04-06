@@ -192,15 +192,19 @@ class GlowWordEmbedding(GlowBase):
         logging.info('generating embedding for all vocab: {}'.format(len(inputs)))
         batch = self.config.batch if batch is None else batch
         loader = torch.utils.data.DataLoader(self.data_iterator(inputs), batch_size=batch, num_workers=num_workers)
+        latent_vectors = []
+        with torch.no_grad():
+            for x in tqdm(loader):
+                z, _ = self.model(x.to(self.device), return_loss=False)
+                latent_vectors += z.cpu().tolist()
+
+        logging.info('write to file')
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
             txt_file.write(str(len(loader)) + " " + str(self.hidden_size) + "\n")
-            with torch.no_grad():
-                for x in tqdm(loader):
-                    z, _ = self.model(x.to(self.device), return_loss=False)
-                    for v in z.cpu().tolist():
-                        txt_file.write(inputs.pop(0) + ' ')
-                        txt_file.write(' '.join([str(v_) for v_ in v]))
-                        txt_file.write("\n")
+            for v in tqdm(latent_vectors):
+                txt_file.write(inputs.pop(0) + ' ')
+                txt_file.write(' '.join([str(v_) for v_ in v]))
+                txt_file.write("\n")
 
         logging.info("producing binary file")
         model = KeyedVectors.load_word2vec_format(output_path + '.txt')
