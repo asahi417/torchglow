@@ -188,7 +188,7 @@ class GlowWordEmbedding(GlowBase):
         else:
             data_train, _ = self.setup_data(validation_rate=0)
             inputs = data_train.vocab
-        logging.debug('generating embedding for all vocab: {}'.format(len(inputs)))
+        logging.info('generating embedding for all vocab: {}'.format(len(inputs)))
         batch = self.config.batch if batch is None else batch
         loader = torch.utils.data.DataLoader(self.data_iterator(inputs), batch_size=batch, num_workers=num_workers)
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
