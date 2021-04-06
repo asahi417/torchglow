@@ -195,7 +195,7 @@ class GlowWordEmbedding(GlowBase):
                     z, _ = self.model(x.to(self.device), return_loss=False)
                     for v in z.cpu().tolist():
                         txt_file.write(words.pop(0))
-                        txt_file.write(' '.join(v))
+                        txt_file.write(' '.join([str(v_) for v_ in v]))
                     txt_file.write("\n")
 
         logging.info("producing binary file")
