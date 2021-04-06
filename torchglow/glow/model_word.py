@@ -194,9 +194,11 @@ class GlowWordEmbedding(GlowBase):
                 for x in loader:
                     z, _ = self.model(x.to(self.device), return_loss=False)
                     for v in z.cpu().tolist():
-                        txt_file.write(words.pop(0))
+                        # print(words[0])
+                        # print(len(v))
+                        txt_file.write(words.pop(0) + ' ')
                         txt_file.write(' '.join([str(v_) for v_ in v]))
-                    txt_file.write("\n")
+                        txt_file.write("\n")
 
         logging.info("producing binary file")
         model = KeyedVectors.load_word2vec_format(output_path + '.txt')
