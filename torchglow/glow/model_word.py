@@ -2,6 +2,7 @@
 import os
 import logging
 from typing import Dict, List
+from tqdm import tqdm
 import torch
 
 from gensim.models import KeyedVectors
@@ -194,7 +195,7 @@ class GlowWordEmbedding(GlowBase):
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
             txt_file.write(str(len(loader)) + " " + str(self.hidden_size) + "\n")
             with torch.no_grad():
-                for n, x in enumerate(loader):
+                for x in tqdm(loader):
                     z, _ = self.model(x.to(self.device), return_loss=False)
                     for v in z.cpu().tolist():
                         txt_file.write(inputs.pop(0) + ' ')

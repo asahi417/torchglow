@@ -131,6 +131,7 @@ def get_iterator_word_embedding(model_type: str, word_pair_input: bool = False):
 
         def __init__(self, vocab, *args, **kwargs):
             self.vocab = vocab
+            print('Dataset vocab size', len(self.vocab))
 
         def __len__(self):
             return len(self.vocab)
