@@ -184,19 +184,21 @@ class GlowWordEmbedding(GlowBase):
         if not output_path.endswith('.bin'):
             output_path = output_path + '.bin'
         logging.debug('generating embedding for all vocab')
-        data_train, _ = self.setup_data(validation_rate=0)
+        if self.data_iterator.model_vocab is not None:
+            inputs = self.data_iterator.model_vocab
+        else:
+            data_train, _ = self.setup_data(validation_rate=0)
+            inputs = data_train.vocab
+
         batch = self.config.batch if batch is None else batch
-        loader = torch.utils.data.DataLoader(data_train, batch_size=batch, shuffle=False, num_workers=num_workers)
-        words = data_train.vocab.copy()
+        loader = torch.utils.data.DataLoader(self.data_iterator(inputs), batch_size=batch, num_workers=num_workers)
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
             txt_file.write(str(len(data_train)) + " " + str(self.hidden_size) + "\n")
             with torch.no_grad():
                 for x in loader:
                     z, _ = self.model(x.to(self.device), return_loss=False)
                     for v in z.cpu().tolist():
-                        # print(words[0])
-                        # print(len(v))
-                        txt_file.write(words.pop(0) + ' ')
+                        txt_file.write(inputs.pop(0) + ' ')
                         txt_file.write(' '.join([str(v_) for v_ in v]))
                         txt_file.write("\n")
 
