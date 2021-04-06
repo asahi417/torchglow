@@ -22,7 +22,8 @@ __all__ = ('get_dataset', 'get_iterator_word_embedding', 'get_iterator_bert')
 def get_dataset(data_iterator,
                 data_name: str = 'common_word',
                 parallel: bool = True,
-                validation_rate: float = 0):
+                validation_rate: float = 0,
+                return_original_data: bool = False):
     """ Get word dataset iterator.
 
     Parameters
@@ -94,7 +95,7 @@ def get_iterator_bert(model: str, max_length: int = 32, embedding_layers: List =
     return (lm.preprocess, lm.to_embedding), lm.hidden_size
 
 
-def get_iterator_word_embedding(model_type: str, word_pair_input: bool):
+def get_iterator_word_embedding(model_type: str, word_pair_input: bool = False):
     """ Get data iterator with all pipelines required as preprocessing for word embedding.
 
     Parameters

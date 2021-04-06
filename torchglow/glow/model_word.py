@@ -4,6 +4,8 @@ import logging
 from typing import Dict, List
 import torch
 
+from gensim.models import KeyedVectors
+
 from .model_base import GlowBase
 from .module import GlowNetwork1D
 from ..config import Config
@@ -153,10 +155,10 @@ class GlowWordEmbedding(GlowBase):
         self.model.to(self.device)
         logging.info('GlowWordEmbedding running on {} GPUs'.format(self.n_gpu))
 
-    def setup_data(self):
+    def setup_data(self, validation_rate=None):
         """ Initialize training dataset. """
-        return get_dataset(
-            self.data_iterator, data_name=self.config.data, validation_rate=self.config.validation_rate)
+        validation_rate = self.config.validation_rate if validation_rate is None else validation_rate
+        return get_dataset(self.data_iterator, data_name=self.config.data, validation_rate=validation_rate)
 
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         return self.reconstruct_base(sample_size, batch)
@@ -172,3 +174,34 @@ class GlowWordEmbedding(GlowBase):
     @property
     def vocab(self):
         return self.data_iterator.model_vocab
+
+    def export_gensim_model(self,
+                            output_path: str,
+                            batch=None,
+                            num_workers: int = 0):
+        assert self.config.is_trained, 'model is not trained'
+        assert not self.word_pair_input, 'model with word pair input is not allowed'
+        if output_path.endswith('.bin'):
+            output_path = output_path + '.bin'
+        logging.debug('generating embedding for all vocab')
+        data_train, _ = self.setup_data(validation_rate=0)
+        batch = self.config.batch if batch is None else batch
+        loader = torch.utils.data.DataLoader(data_train, batch_size=batch, shuffle=False, num_workers=num_workers)
+        words = data_train.vocab.copy()
+        with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
+            txt_file.write(str(len(data_train)) + " " + str(self.hidden_size) + "\n")
+            with torch.no_grad():
+                for x in loader:
+                    z, _ = self.model(x.to(self.device), return_loss=False)
+                    for v in z.cpu().tolist():
+                        txt_file.write(words.pop(0))
+                        txt_file.write(' '.join(v))
+                    txt_file.write("\n")
+
+        logging.info("producing binary file")
+        model = KeyedVectors.load_word2vec_format(output_path + '.txt')
+        model.wv.save_word2vec_format(output_path, binary=True)
+        logging.info("new embeddings are available at {}".format(output_path))
+        os.remove(output_path + '.txt')
+        return output_path
+

@@ -160,16 +160,16 @@ def get_analogy_dataset(data_name: str):
     return val_set, test_set
 
 
-def get_google_analogy_test():
-    """ Google Analogy Test """
-    cache_dir = '{}/.cache/torchglow/analogy/dataset'.format(os.path.expanduser('~'))
-    url = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/google_analogy_test.json'
-    data_name = 'google_analogy_test.json'
-    if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
-        wget(url, cache_dir)
-    with open('{}/{}'.format(cache_dir, data_name), 'r') as f:
-        data = json.load(f)
-    return data
+# def get_google_analogy_test():
+#     """ Google Analogy Test """
+#     cache_dir = '{}/.cache/torchglow/analogy/dataset'.format(os.path.expanduser('~'))
+#     url = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/google_analogy_test.json'
+#     data_name = 'google_analogy_test.json'
+#     if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
+#         wget(url, cache_dir)
+#     with open('{}/{}'.format(cache_dir, data_name), 'r') as f:
+#         data = json.load(f)
+#     return data
 
 # def word_pair_format(pair: List):
 #     """ transform word pair into the format of relative format """

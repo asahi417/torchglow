@@ -9,6 +9,10 @@ from glob import glob
 from itertools import chain
 from copy import deepcopy
 import pandas as pd
+
+from gensim.models import KeyedVectors
+from gensim.test.utils import datapath
+
 import torchglow
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
@@ -31,7 +35,7 @@ def diff(list_a, list_b):
 
 def main():
     argument_parser = argparse.ArgumentParser(description='Model evaluation on analogy test.')
-    argument_parser.add_argument('-b', '--batch', help='batch size', default=128, type=int)
+    argument_parser.add_argument('-b', '--batch', help='batch size', default=2048, type=int)
     argument_parser.add_argument('--checkpoint-path', help='model checkpoint', default='./ckpt/glow_word_embedding/*',
                                  type=str)
     argument_parser.add_argument('-o', '--output-file', help='directory to export model weight file',
@@ -47,7 +51,6 @@ def main():
 
 def main_flat(opt):
     checkpoint_paths = glob(opt.checkpoint_path)
-    test = torchglow.util.get_google_analogy_test()
     result = []
     for n, checkpoint_path in enumerate(checkpoint_paths):
         logging.info('checkpoint: {}/{}'.format(n, len(checkpoint_paths)))
@@ -61,24 +64,17 @@ def main_flat(opt):
             tmp_result = deepcopy(parameter)
             tmp_result['epoch'] = e
             tmp_result['analogy_data'] = 'google_analogy_test'
-            model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
-            if model.word_pair_input:
-                logging.info('\t * skip as is trained on word pair')
-                continue
-            logging.info('\t * compute accuracy')
-            out_all = []
-            for k, parent_values in test.items():
-                logging.info('\t\t * relation: {}'.format(k))
-                _out = []
-                for v in parent_values:
-                    head_stem, tail_stem, head, tail = v
-                    v = model[head] + model[tail_stem] - model[head_stem]
-                    pred, score = model.similar_by_vector(v)[0]
-                    _out.append(pred == tail)
-                tmp_result[k] = sum(_out) / len(_out) * 100
-                out_all += _out
-            tmp_result['all'] = sum(out_all) / len(out_all) * 100
-            logging.info('\t * accuracy: {}'.format(tmp_result['all']))
+            model_path = '{}/gensim_model.{}.bin'.format(checkpoint_path, e)
+            if not os.path.exists(model_path):
+                model = torchglow.GlowWordEmbedding(checkpoint_path=checkpoint_path, checkpoint_epoch=e)
+                if model.word_pair_input:
+                    logging.info('\t * skip as is trained on word pair')
+                    continue
+                model.export_gensim_model(model_path, batch=opt.batch)
+            model = KeyedVectors.load_word2vec_format(model_path, binary=True)
+            out = model.evaluate_word_analogies(datapath('questions-words.txt'))
+            tmp_result['accuracy'] = out[0]
+            logging.info('\t * accuracy: {}'.format(out[0]))
             del model
             result.append(tmp_result)
 
@@ -135,7 +131,6 @@ def main_mc(opt):
                     whole_word = list(filter(lambda x: x[0] in model.vocab and x[1] in model.vocab, whole_word))
                 elif model.vocab is not None:
                     whole_word = list(filter(lambda x: x in model.vocab, whole_word))
-                print(whole_word[:10])
                 vector, vector_original = model.embed(whole_word, batch=opt.batch, return_original_embedding=True)
                 latent_dict_normalized = {str(k): v for k, v in zip(whole_word, vector)}
                 latent_dict_original = {str(k): v for k, v in zip(whole_word, vector_original)}
