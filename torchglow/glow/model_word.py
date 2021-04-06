@@ -179,7 +179,7 @@ class GlowWordEmbedding(GlowBase):
     def export_gensim_model(self,
                             output_path: str,
                             batch=None,
-                            num_workers: int = 0):
+                            num_workers: int = 1):
         assert self.config.is_trained, 'model is not trained'
         assert not self.word_pair_input, 'model with word pair input is not allowed'
         if not output_path.endswith('.bin'):
