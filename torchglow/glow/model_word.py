@@ -183,13 +183,12 @@ class GlowWordEmbedding(GlowBase):
         assert not self.word_pair_input, 'model with word pair input is not allowed'
         if not output_path.endswith('.bin'):
             output_path = output_path + '.bin'
-        logging.debug('generating embedding for all vocab')
         if self.data_iterator.model_vocab is not None:
-            inputs = self.data_iterator.model_vocab
+            inputs = list(self.data_iterator.model_vocab)
         else:
             data_train, _ = self.setup_data(validation_rate=0)
             inputs = data_train.vocab
-
+        logging.debug('generating embedding for all vocab: {}'.format(len(inputs)))
         batch = self.config.batch if batch is None else batch
         loader = torch.utils.data.DataLoader(self.data_iterator(inputs), batch_size=batch, num_workers=num_workers)
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
