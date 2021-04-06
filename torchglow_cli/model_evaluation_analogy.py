@@ -15,7 +15,7 @@ from gensim.test.utils import datapath
 
 import torchglow
 
-logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
+logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG, datefmt='%Y-%m-%d %H:%M:%S')
 torchglow.util.fix_seed(0)
 
 
