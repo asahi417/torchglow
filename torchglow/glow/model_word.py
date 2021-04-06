@@ -197,10 +197,11 @@ class GlowWordEmbedding(GlowBase):
             for x in tqdm(loader):
                 z, _ = self.model(x.to(self.device), return_loss=False)
                 latent_vectors += z.cpu().tolist()
+                print(len(latent_vectors))
 
         logging.info('write to file')
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
-            txt_file.write(str(len(loader)) + " " + str(self.hidden_size) + "\n")
+            txt_file.write(str(len(inputs)) + " " + str(self.hidden_size) + "\n")
             for v in tqdm(latent_vectors):
                 txt_file.write(inputs.pop(0) + ' ')
                 txt_file.write(' '.join([str(v_) for v_ in v]))
