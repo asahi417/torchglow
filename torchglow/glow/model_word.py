@@ -193,7 +193,7 @@ class GlowWordEmbedding(GlowBase):
         batch = self.config.batch if batch is None else batch
         loader = torch.utils.data.DataLoader(self.data_iterator(inputs), batch_size=batch, num_workers=num_workers)
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
-            txt_file.write(str(len(data_train)) + " " + str(self.hidden_size) + "\n")
+            txt_file.write(str(len(loader)) + " " + str(self.hidden_size) + "\n")
             with torch.no_grad():
                 for x in loader:
                     z, _ = self.model(x.to(self.device), return_loss=False)
