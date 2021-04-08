@@ -202,13 +202,8 @@ class GlowWordEmbedding(GlowBase):
         logging.info('write to file')
         with open(output_path + '.txt', 'w', encoding='utf-8') as txt_file:
             txt_file.write(str(len(inputs)) + " " + str(self.hidden_size) + "\n")
-            # for
-            # content = [inputs[n] + ' ' + ' '.join([str(v_) for v_ in v]) for n, v in enumerate(latent_vectors)]
-            # txt_file.write('\n'.join(content))
             for n, v in tqdm(enumerate(latent_vectors)):
                 txt_file.write(inputs[n] + ' ' + ' '.join([str(v_) for v_ in v]) + "\n")
-                # txt_file.write(' '.join([str(v_) for v_ in v]))
-                # txt_file.write("\n")
 
         logging.info("producing binary file")
         model = KeyedVectors.load_word2vec_format(output_path + '.txt')

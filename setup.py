@@ -44,7 +44,8 @@ setup(
     python_requires='>=3.6',
     entry_points={
         'console_scripts': [
-            'torchglow-train-image = torchglow_cli.model_training:main_image',
+            'torchglow-train = torchglow_cli.model_training:main_image',
+            'torchglow-generate = torchglow_cli.model_generation:main',
             'torchglow-train-bert = torchglow_cli.model_training:main_bert',
             'torchglow-train-word = torchglow_cli.model_training:main_word',
             'torchglow-eval-bert = torchglow_cli.model_evaluation_analogy:main_bert',
