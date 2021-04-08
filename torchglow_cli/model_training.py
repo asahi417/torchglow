@@ -47,134 +47,7 @@ def config_image(parser):
     return parser
 
 
-def config_bert(parser):
-    parser.add_argument('--lm-model', help='language model', default='roberta-large', type=str)
-    parser.add_argument('--lm-max-length', help='length', default=32, type=int)
-    parser.add_argument('--lm-embedding-layers', help='embedding layers in LM', default='-1,-2', type=str)
-    parser.add_argument('--data', help='dataset', default='common_word_pairs', type=str)
-    parser.add_argument('--validation-rate', help='validation set ratio', default=0.0, type=float)
-    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt/bert', type=str)
-    return parser
-
-
-def config_word(parser):
-    parser.add_argument('-d', '--data', help='dataset from `common_word`, `common_word_pairs`', default='common_word_pairs', type=str)
-    parser.add_argument('-m', '--model-type', help='embedding model type (glove/fasttext/w2v)',
-                        default='glove', type=str)
-    parser.add_argument('--validation-rate', help='validation set ratio', default=0.0, type=float)
-    parser.add_argument('--export-dir', help='directory to export model weight file',
-                        default='./ckpt/glow_word_embedding', type=str)
-    return parser
-
-
-def main_bert():
-    argument_parser = argparse.ArgumentParser(description='Train GlowBERT model.')
-    argument_parser = config(argument_parser)
-    argument_parser = config_bert(argument_parser)
-    opt = argument_parser.parse_args()
-
-    # logging
-    level = logging.DEBUG if opt.debug else logging.INFO
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
-
-    trainer = torchglow.GlowBERT(
-        lm_model=opt.lm_model,
-        lm_max_length=opt.lm_max_length,
-        lm_embedding_layers=[int(i) for i in opt.lm_embedding_layers.split(',')],
-        validation_rate=opt.validation_rate,
-        data=opt.data,
-        training_step=opt.training_step,
-        epoch=opt.epoch,
-        export_dir=opt.export_dir,
-        batch=opt.batch,
-        lr=opt.lr,
-        batch_init=opt.batch_init,
-        filter_size=opt.filter_size,
-        n_flow_step=opt.n_flow_step,
-        actnorm_scale=opt.actnorm_scale,
-        lu_decomposition=opt.lu_decomposition,
-        random_seed=opt.random_seed,
-        decay_lr=opt.decay_lr,
-        epoch_warmup=opt.epoch_warmup,
-        weight_decay=opt.weight_decay,
-        optimizer=opt.optimizer,
-        momentum=opt.momentum,
-        checkpoint_path=opt.checkpoint_path,
-        unit_gaussian=opt.unit_gaussian,
-        additive_coupling=opt.additive_coupling,
-        cache_dir=opt.cache_dir)
-
-    # add file handler
-    logger = logging.getLogger()
-    file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
-    file_handler.setLevel(level)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
-    logger.addHandler(file_handler)
-
-    trainer.train(
-        batch_valid=opt.batch_valid,
-        num_workers=opt.num_workers,
-        fp16=opt.fp16,
-        progress_interval=opt.progress_interval,
-        epoch_valid=opt.epoch_valid,
-        epoch_save=opt.epoch_save
-    )
-
-
-def main_word():
-    argument_parser = argparse.ArgumentParser(description='Train GlowWordEmbedding model.')
-    argument_parser = config(argument_parser)
-    argument_parser = config_word(argument_parser)
-    opt = argument_parser.parse_args()
-
-    # logging
-    level = logging.DEBUG if opt.debug else logging.INFO
-    logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
-
-    trainer = torchglow.GlowWordEmbedding(
-        data=opt.data,
-        model_type=opt.model_type,
-        validation_rate=opt.validation_rate,
-        training_step=opt.training_step,
-        epoch=opt.epoch,
-        export_dir=opt.export_dir,
-        batch=opt.batch,
-        lr=opt.lr,
-        batch_init=opt.batch_init,
-        filter_size=opt.filter_size,
-        n_flow_step=opt.n_flow_step,
-        actnorm_scale=opt.actnorm_scale,
-        lu_decomposition=opt.lu_decomposition,
-        random_seed=opt.random_seed,
-        decay_lr=opt.decay_lr,
-        epoch_warmup=opt.epoch_warmup,
-        weight_decay=opt.weight_decay,
-        optimizer=opt.optimizer,
-        momentum=opt.momentum,
-        checkpoint_path=opt.checkpoint_path,
-        unit_gaussian=opt.unit_gaussian,
-        additive_coupling=opt.additive_coupling,
-        cache_dir=opt.cache_dir)
-
-    # add file handler
-    logger = logging.getLogger()
-    file_handler = logging.FileHandler('{}/training.log'.format(trainer.checkpoint_dir))
-    file_handler.setLevel(level)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)-8s %(message)s'))
-    logger.addHandler(file_handler)
-
-    # model training
-    trainer.train(
-        batch_valid=opt.batch_valid,
-        num_workers=opt.num_workers,
-        fp16=opt.fp16,
-        progress_interval=opt.progress_interval,
-        epoch_valid=opt.epoch_valid,
-        epoch_save=opt.epoch_save
-    )
-
-
-def main_image():
+def main():
     argument_parser = argparse.ArgumentParser(description='Train Glow image model.')
     argument_parser = config(argument_parser)
     argument_parser = config_image(argument_parser)
@@ -226,4 +99,8 @@ def main_image():
         epoch_valid=opt.epoch_valid,
         epoch_save=opt.epoch_save
     )
+
+
+if __name__ == '__main__':
+    main()
 
