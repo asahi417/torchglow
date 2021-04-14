@@ -10,7 +10,7 @@ import numpy as np
 from torch import nn
 from torch.nn.functional import conv2d
 
-__all__ = ('GlowNetwork', 'GlowNetwork1D')
+# __all__ = ('GlowNetwork', 'GlowNetwork1D')
 EPS = 1e-5
 
 NO_DOUBLE_PRECISION = os.getenv('TORCHGLOW_NO_DOUBLE_PRECISION', None)
@@ -325,7 +325,7 @@ class Split(nn.Module):
             generate latent state by sampling from the learnt distribution by x.
         log_det : torch.Tensor
             Log determinant for model training in forward mode. Skip to compute if None or reverse mode.
-        eps_std : bool
+        eps_std : flaot
             Factor to scale sampling distribution.
 
         Returns
@@ -527,107 +527,3 @@ class GlowNetwork(nn.Module):
             else:
                 nll = None
             return latent_states, nll
-
-
-class GlowNetwork1D(nn.Module):
-    """ Glow network architecture for 1D embedding vector. """
-
-    def __init__(self,
-                 n_channel: int,
-                 filter_size: int = 256,
-                 n_flow_step: int = 10,
-                 actnorm_scale: float = 1.0,
-                 lu_decomposition: bool = False,
-                 unit_gaussian: bool = False,
-                 additive_coupling: bool = False):
-        """ Glow network architecture
-
-        Parameters
-        ----------
-        n_channel: List
-            Input channel size.
-        filter_size : int
-            Filter size for CNN layer.
-        n_flow_step : int
-            Number of flow block.
-        actnorm_scale : float
-            Factor to scale ActNorm.
-        lu_decomposition : bool
-            Whether use LU decomposition in invertible CNN layer.
-        unit_gaussian : bool
-            Employ unit gaussian instead of learnt prior as the constrain.
-        additive_coupling : bool
-            Additive coupling instead of affine coupling.
-        """
-        super().__init__()
-        self.layers = nn.ModuleList()
-        self.n_flow_step = n_flow_step
-        flow_config = {'filter_size': filter_size, 'kernel_size': 1, 'stride': 1,
-                       'actnorm_scale': actnorm_scale, 'lu_decomposition': lu_decomposition,
-                       'additive_coupling': additive_coupling}
-        self.n_channel = n_channel
-        for _ in range(self.n_flow_step):
-            self.layers.append(FlowStep(in_channels=self.n_channel, **flow_config))
-        self.layers.append(Split(
-            in_channels=self.n_channel, split=False, stride=1, kernel_size=1, unit_gaussian=unit_gaussian))
-
-    def forward(self,
-                x: torch.Tensor = None,
-                initialize_actnorm: bool = False,
-                sample_size: int = 1,
-                return_loss: bool = True,
-                reverse: bool = False,
-                latent_states: List = None,
-                eps_std: float = None):
-        """ Glow forward inference/reverse sampling module.
-
-        Parameters
-        ----------
-        x : torch.Tensor
-            Input tensor (batch, n_channel), which can be left as None to generate random sample from learnt posterior
-            for reverse mode.
-        reverse : bool
-            Switch to reverse mode to sample data from latent variable.
-        latent_states: torch.Tensor
-            Latent variable to generate data, which is None as default for random sampling, otherwise
-            generate data conditioned by the given latent variable. This should be the output from the forward
-            inference.
-        sample_size : int
-            Sampling size for random generation in reverse mode.
-        return_loss : bool
-            Switch to not computing log-det mode (should be True in non-training usecases).
-        eps_std : bool
-            Factor to scale sampling distribution.
-
-        Returns
-        -------
-        output :
-            (forward mode) torch.Tensor (batch, n_channel) that is the transformed latent variables of input tensor
-            (reverse mode) torch.Tensor (batch, n_channel) of the generated data
-        nll : negative log likelihood
-        """
-        if reverse:
-            if x is None:
-                # seed variables for sampling data
-                x = torch.zeros([sample_size] + [self.n_channel, 1, 1])
-
-            for layer in reversed(self.layers):
-                if isinstance(layer, Split):
-                    x, _ = layer(x, reverse=True, eps_std=eps_std, z=latent_states)
-                else:
-                    x, _ = layer(x, reverse=True)
-            x = x.reshape(len(x), -1)  # flatten CHW to 1D array
-            return x, None
-        else:
-            assert x is not None, '`x` have to be a tensor, not None'
-            x = x.reshape(len(x), -1, 1, 1)  # convert to BCHW shape
-            log_det = 0 if return_loss else None
-            for layer in self.layers:
-                if isinstance(layer, FlowStep):
-                    x, log_det = layer(x, log_det=log_det, initialize_actnorm=initialize_actnorm)
-                else:
-                    x, log_det = layer(x, log_det=log_det)
-            (_, z) = x
-            nll = None if log_det is None else - log_det
-            z = z.reshape(len(z), -1)  # flatten CHW to 1D array
-            return z, nll

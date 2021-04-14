@@ -25,7 +25,6 @@ class GlowBase(nn.Module):
         self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
         self.model = None
         self.n_bins = None  # for image input
-        self.converter = None  # for preprocessing such as BERT embedding
         self.epoch_elapsed = None
         self.parallel = False
         self.data_iterator = None
@@ -165,8 +164,6 @@ class GlowBase(nn.Module):
         with torch.no_grad():
             loader = iter(data_loader)
             x = next(loader)
-            if self.converter is not None:
-                x = self.converter(x)
             if type(x) is not torch.Tensor:
                 x = x[0]
             x = x.to(self.device)
@@ -180,20 +177,18 @@ class GlowBase(nn.Module):
             data_valid = data_train
         loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
         latent_vector = []
-
+        label = []
         with torch.no_grad():
-            for x in loader:
-                if self.converter is not None:
-                    x = self.converter(x)
-                if type(x) is not torch.Tensor:
-                    x = x[0]
+            for x, y in loader:
+                label += y.cpu().tolist()
+                # 3, batch, embedding
                 z, _ = self.model(x.to(self.device), return_loss=False)
-                if type(z) is torch.Tensor:
-                    z = z.cpu.tolist()
-                latent_vector += [flatten_list(_z) for _z in z]
+                z_all = [[flatten_list(__z) for __z in _z] for _z in z]
+                z_all = list(zip(*z_all))
+                latent_vector += [list(chain(*i)) for i in z_all]
                 if len(latent_vector) > sample_size:
                     break
-        return latent_vector
+        return latent_vector[:sample_size], label[:sample_size]
 
     def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
         """ Reconstruct validation data_iterator """
@@ -206,8 +201,6 @@ class GlowBase(nn.Module):
         data_reconstruct = []
         with torch.no_grad():
             for x in loader:
-                if self.converter is not None:
-                    x = self.converter(x)
                 if type(x) is not torch.Tensor:
                     x = x[0]
                 x = x.to(self.device)
@@ -247,8 +240,6 @@ class GlowBase(nn.Module):
         converted_input = []
         with torch.no_grad():
             for x in data_loader:
-                if self.converter is not None:
-                    x = self.converter(x)
                 converted_input += x.reshape(len(x), -1).cpu().tolist()
                 if type(x) is not torch.Tensor:
                     x = x[0]
@@ -271,8 +262,6 @@ class GlowBase(nn.Module):
         for i, x in enumerate(data_loader):
             if i >= step_in_epoch:
                 break
-            if self.converter is not None:
-                x = self.converter(x)
             if type(x) is not torch.Tensor:
                 x = x[0]
             x = x.to(self.device)
@@ -315,8 +304,6 @@ class GlowBase(nn.Module):
         data_size = 0
         with torch.no_grad():
             for x in data_loader:
-                if self.converter is not None:
-                    x = self.converter(x)
                 if type(x) is not torch.Tensor:
                     x = x[0]
                 x = x.to(self.device)

@@ -164,7 +164,7 @@ def get_image_decoder(n_bits_x: int = 8):
 
         def single_img(v_):
             if keep_tensor:
-                return ((v_ + .5) * n_bins).round() * n_bins
+                return ((v_ + .5) * n_bins).round() / n_bins * 256
             else:
                 if type(v_) is torch.Tensor:
                     v_ = v_.cpu().numpy()
