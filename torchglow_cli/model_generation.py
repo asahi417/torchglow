@@ -2,7 +2,7 @@
 import argparse
 import logging
 import os
-
+from glob import glob
 import torchglow
 
 logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO, datefmt='%Y-%m-%d %H:%M:%S')
@@ -21,15 +21,20 @@ def main():
                         default=None, type=str)
     parser.add_argument('--eps-std', help='std for sampling distribution', default=1, type=float)
     parser.add_argument('--random-seed', help='random seed', default=0, type=int)
+    parser.add_argument('--all-epoch', help='generate on all epochs', action='store_true')
     opt = parser.parse_args()
 
     # main
-    torchglow.util.fix_seed(opt.random_seed)
-    generate_sample(opt.epoch, opt)
+    if opt.all_epoch:
+        for k in glob('{}/model.*.pt'.format(opt.checkpoint_path)):
+            generate_sample(int(k.split('model.')[-1].replace('.pt', '')), opt)
+    else:
+        generate_sample(opt.epoch, opt)
 
 
 def generate_sample(epoch, opt):
     logging.info('loading model with epoch {}'.format(epoch))
+    torchglow.util.fix_seed(opt.random_seed)
     export_dir = opt.export_dir if opt.export_dir else './output/{}/'.format(os.path.basename(opt.checkpoint_path))
     os.makedirs(os.path.dirname(export_dir), exist_ok=True)
 

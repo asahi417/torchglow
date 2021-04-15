@@ -2,7 +2,7 @@
 import argparse
 import logging
 import os
-
+from glob import glob
 
 import numpy as np
 from sklearn.datasets import load_digits
@@ -28,35 +28,41 @@ def main():
     parser.add_argument('--export-dir', help='directory to export generated image (`./output/{ckpt}/` as default)',
                         default=None, type=str)
     parser.add_argument('--random-seed', help='random seed', default=0, type=int)
+    parser.add_argument('--all-epoch', help='generate on all epochs', action='store_true')
     opt = parser.parse_args()
 
     # main
-    torchglow.util.fix_seed(opt.random_seed)
-    embed(None, opt)
+
+    if opt.all_epoch:
+        for k in glob('{}/model.*.pt'.format(opt.checkpoint_path)):
+            embed(int(k.split('model.')[-1].replace('.pt', '')), opt)
+    else:
+        embed(opt.epoch, opt)
 
 
 def embed(epoch, opt):
     logging.info('loading model with epoch {}'.format(epoch))
     export_dir = opt.export_dir if opt.export_dir else './output/{}'.format(os.path.basename(opt.checkpoint_path))
     os.makedirs(export_dir, exist_ok=True)
-    export_image = '{}/latent.{}.png'.format(export_dir, epoch)
 
     model = torchglow.Glow(checkpoint_path=opt.checkpoint_path, epoch=epoch)
     # datasize x dimension
-    embedding, label = model.embed_data(sample_size=opt.sample_size, batch=opt.batch)
-    embedding = np.array(embedding)
-    print(len(label))
-    print(embedding.shape)
-    input()
-    reducer = umap.UMAP(random_state=opt.random_seed)
-    reducer.fit(embedding)
-    embedding = reducer.transform(embedding)
+    embeddings, label = model.embed_data(sample_size=opt.sample_size, batch=opt.batch)
+    logging.info('latent embedding consists of {} depth'.format(len(embeddings)))
+    for n, embedding in enumerate(embeddings):
+        plt.figure()
+        export_image = '{}/latent.epoch_{}.depth_{}.png'.format(export_dir, epoch, n)
+        embedding = np.array(embedding)
+        reducer = umap.UMAP(random_state=opt.random_seed)
+        reducer.fit(embedding)
+        embedding = reducer.transform(embedding)
 
-    plt.scatter(embedding[:, 0], embedding[:, 1], c=label, cmap='Spectral', s=5)
-    plt.gca().set_aspect('equal', 'datalim')
-    plt.colorbar(boundaries=np.arange(len(set(label)) + 1) - 0.5).set_ticks(np.arange(len(set(label))))
-    plt.title('UMAP 2D projection', fontsize=16)
-    plt.savefig(export_image)
+        plt.scatter(embedding[:, 0], embedding[:, 1], c=label, cmap='Spectral', s=5)
+        plt.gca().set_aspect('equal', 'datalim')
+        plt.colorbar(boundaries=np.arange(len(set(label)) + 1) - 0.5).set_ticks(np.arange(len(set(label))))
+        plt.title('Latent space 2D projection (depth {}, epoch {:4})'.format(n, epoch), fontsize=16)
+        # plt.tight_layout()
+        plt.savefig(export_image)
 
 
 if __name__ == '__main__':

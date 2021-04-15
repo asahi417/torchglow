@@ -45,7 +45,8 @@ setup(
     entry_points={
         'console_scripts': [
             'torchglow-train = torchglow_cli.model_training:main',
-            'torchglow-generate = torchglow_cli.model_generation:main'
+            'torchglow-generate = torchglow_cli.model_generation:main',
+            'torchglow-latent = torchglow_cli.model_latent_space:main'
         ]
     }
 )

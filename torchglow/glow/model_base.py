@@ -176,19 +176,33 @@ class GlowBase(nn.Module):
         if data_valid is None:
             data_valid = data_train
         loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
-        latent_vector = []
+        latent_vector = None
         label = []
         with torch.no_grad():
             for x, y in loader:
                 label += y.cpu().tolist()
-                # 3, batch, embedding
+                # latent depth, batch, embedding
                 z, _ = self.model(x.to(self.device), return_loss=False)
                 z_all = [[flatten_list(__z) for __z in _z] for _z in z]
-                z_all = list(zip(*z_all))
-                latent_vector += [list(chain(*i)) for i in z_all]
-                if len(latent_vector) > sample_size:
+                if latent_vector is None:
+                    latent_vector = z_all
+                else:
+                    latent_vector = [a + b for a, b in zip(latent_vector, z_all)]
+                # for i in z:
+                #     print(len(i))
+                #     print([o.shape for o in i])
+                # input()
+                # latent depth, batch, embedding
+
+                # print([[len(j) for j in i] for i in latent_vector])
+                # z_all = list(zip(*z_all))
+                # print([[len(j) for j in i] for i in z_all])
+
+                # latent_vector += [list(chain(*i)) for i in z_all]
+                if len(latent_vector[0]) > sample_size:
                     break
-        return latent_vector[:sample_size], label[:sample_size]
+        latent_vector = [i[:sample_size] for i in latent_vector]
+        return latent_vector, label[:sample_size]
 
     def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
         """ Reconstruct validation data_iterator """

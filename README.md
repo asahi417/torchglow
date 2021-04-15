@@ -12,6 +12,11 @@ pip install git+https://github.com/asahi417/torchglow
 torchglow-train-image -s 50000 --batch 256 --batch-init 512 --decay-lr --epoch-valid 1 
 ```
 
+```shell script
+torchglow-generate --checkpoint-path ./ckpt/cifar10 --all-epoch -s 64 -b 64 -n 1
+torchglow-latent --checkpoint-path ./ckpt/cifar10 --all-epoch 
+```
+
 ### CelebA
 ```shell script
 torchglow-train-image -d celeba -s 27000 --image-size 64 --batch 64 --batch-init 256 --n-level 6 --n-bits-x 5 --lr 0.0001 --additive-coupling --epoch-save 5 --epoch-valid 1 --debug
