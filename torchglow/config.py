@@ -14,7 +14,7 @@ __all__ = 'Config'
 
 class Config:
 
-    def __init__(self, export_dir: str = None, checkpoint_path: str = None, **kwargs):
+    def __init__(self, export_dir: str = None, checkpoint_path: str = None, checkpoint_name: str = None, **kwargs):
 
         if checkpoint_path is not None:
             assert len(glob('{}/*.pt'.format(checkpoint_path))) > 0, checkpoint_path
@@ -31,14 +31,20 @@ class Config:
             for k, v in self.config.items():
                 logging.info('\t * {}: {}'.format(k, v))
             ex_configs = {i: self.safe_open(i) for i in glob('{}/*/config.json'.format(export_dir))}
+            taken_name = [os.path.basename(i.replace('/config.json', '')) for i in ex_configs.keys()]
             same_config = list(filter(lambda x: x[1] == self.config, ex_configs.items()))
             if len(same_config) != 0:
                 input('\ncheckpoint already exists: {}\n enter to overwrite >>>'.format(same_config[0]))
                 for _p, _ in same_config:
                     shutil.rmtree(os.path.dirname(_p))
-            self.cache_dir = '{}/{}'.format(export_dir, self.get_random_string(
-                [os.path.basename(i.replace('/config.json', '')) for i in ex_configs.keys()]
-            ))
+                    taken_name.pop(taken_name.index(os.path.basename(os.path.dirname(_p))))
+
+            if checkpoint_name is not None:
+                assert checkpoint_name not in taken_name, '{} is taken, use different name'.format(checkpoint_name)
+                self.cache_dir = '{}/{}'.format(export_dir, checkpoint_name)
+            else:
+                self.cache_dir = '{}/{}'.format(export_dir, self.get_random_string(taken_name))
+
             self.path_model = None
             self.path_optimizer = None
         self.__dict__.update(self.config)

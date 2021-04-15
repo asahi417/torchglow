@@ -15,7 +15,8 @@ def main():
     parser.add_argument('-n', '--n-image', help='number of image', default=2, type=int)
     parser.add_argument('--nrow', help='number of row in image', default=8, type=int)
     parser.add_argument('-b', '--batch', help='batch size', default=4, type=int)
-    parser.add_argument('-c', '--checkpoint-path', help='train existing checkpoint', default='./ckpt/celeba_128', type=str)
+    parser.add_argument('-c', '--checkpoint-path', help='train existing checkpoint',
+                        default='{}/ckpt/celba256'.format(torchglow.util.module_output_dir), type=str)
     parser.add_argument('-e', '--epoch', help='model epoch (the last epoch as default)', default=None, type=int)
     parser.add_argument('--export-dir', help='directory to export generated image (`./output/{ckpt}/` as default)',
                         default=None, type=str)
@@ -35,8 +36,11 @@ def main():
 def generate_sample(epoch, opt):
     logging.info('loading model with epoch {}'.format(epoch))
     torchglow.util.fix_seed(opt.random_seed)
-    export_dir = opt.export_dir if opt.export_dir else './output/{}/'.format(os.path.basename(opt.checkpoint_path))
-    os.makedirs(os.path.dirname(export_dir), exist_ok=True)
+    if opt.export_dir is None:
+        export_dir = '{}/generated_image/{}'.format(torchglow.util.module_output_dir, os.path.basename(opt.checkpoint_path))
+    else:
+        export_dir = opt.export_dir
+    os.makedirs(export_dir, exist_ok=True)
 
     model = torchglow.Glow(checkpoint_path=opt.checkpoint_path, checkpoint_epoch=epoch)
 

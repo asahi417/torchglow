@@ -6,13 +6,16 @@ import zipfile
 import gzip
 import requests
 import json
-from typing import List
+# from typing import List
 from copy import deepcopy
 
 import gdown
 import numpy as np
 import torch
 from torch.optim.lr_scheduler import LambdaLR
+
+home_dir = '{}/.cache/torchglow'.format(os.path.expanduser('~'))
+module_output_dir = './torchglow_output'
 
 
 def flatten_list(nested_list):
@@ -131,46 +134,3 @@ def load_pickle(path):
     with open(path, "rb") as fp:
         return pickle.load(fp)
 
-
-# def get_analogy_baseline(_type: str = 'fasttext_diff'):
-#     """ Get prediction files for analogy dataset on the plain relative embedding for baseline. """
-#     cache_dir = '{}/.cache/torchglow/analogy/baseline'.format(os.path.expanduser('~'))
-#     os.makedirs(cache_dir, exist_ok=True)
-#     assert _type in ['fasttext_diff', 'concat_relative_fasttext', 'relative_init'], _type
-#     prediction_files = '{}/{}.json'.format(cache_dir, _type)
-#     if not os.path.exists(prediction_files):
-#         wget(
-#             url='https://raw.githubusercontent.com/asahi417/AnalogyDataset/master/predictions/{}.json'.format(_type),
-#             cache_dir=cache_dir)
-#     with open(prediction_files) as f:
-#         return json.load(f)
-
-
-def get_analogy_dataset(data_name: str):
-    """ Get SAT-type dataset: a list of (answer: int, prompts: list, stem: list, choice: list)"""
-    cache_dir = '{}/.cache/torchglow/analogy/dataset'.format(os.path.expanduser('~'))
-    root_url_analogy = 'https://github.com/asahi417/AnalogyDataset/releases/download/0.0.0'
-    assert data_name in ['sat', 'u2', 'u4', 'google', 'bats'], 'unknown data_iterator: {}'.format(data_name)
-    if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
-        wget('{}/{}.zip'.format(root_url_analogy, data_name), cache_dir)
-    with open('{}/{}/test.jsonl'.format(cache_dir, data_name), 'r') as f:
-        test_set = list(filter(None, map(lambda x: json.loads(x) if len(x) > 0 else None, f.read().split('\n'))))
-    with open('{}/{}/valid.jsonl'.format(cache_dir, data_name), 'r') as f:
-        val_set = list(filter(None, map(lambda x: json.loads(x) if len(x) > 0 else None, f.read().split('\n'))))
-    return val_set, test_set
-
-
-# def get_google_analogy_test():
-#     """ Google Analogy Test """
-#     cache_dir = '{}/.cache/torchglow/analogy/dataset'.format(os.path.expanduser('~'))
-#     url = 'https://github.com/asahi417/AnalogyTools/releases/download/0.0.0/google_analogy_test.json'
-#     data_name = 'google_analogy_test.json'
-#     if not os.path.exists('{}/{}'.format(cache_dir, data_name)):
-#         wget(url, cache_dir)
-#     with open('{}/{}'.format(cache_dir, data_name), 'r') as f:
-#         data = json.load(f)
-#     return data
-
-# def word_pair_format(pair: List):
-#     """ transform word pair into the format of relative format """
-#     return '__'.join(pair).replace(' ', '_').lower()

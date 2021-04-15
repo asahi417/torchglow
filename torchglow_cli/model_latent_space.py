@@ -23,10 +23,10 @@ def main():
     parser = argparse.ArgumentParser(description='Display latent space')
     parser.add_argument('-b', '--batch', help='batch size', default=4, type=int)
     parser.add_argument('-s', '--sample-size', help='sample size per image', default=4000, type=int)
-    parser.add_argument('--checkpoint-path', help='train existing checkpoint', default='./ckpt/cifar10', type=str)
+    parser.add_argument('-c', '--checkpoint-path', help='train existing checkpoint',
+                        default='{}/ckpt/cifar10'.format(torchglow.util.module_output_dir), type=str)
     parser.add_argument('-e', '--epoch', help='model epoch (the last epoch as default)', default=None, type=int)
-    parser.add_argument('--export-dir', help='directory to export generated image (`./output/{ckpt}/` as default)',
-                        default=None, type=str)
+    parser.add_argument('--export-dir', help='directory to export generated image', default=None, type=str)
     parser.add_argument('--random-seed', help='random seed', default=0, type=int)
     parser.add_argument('--all-epoch', help='generate on all epochs', action='store_true')
     opt = parser.parse_args()
@@ -42,10 +42,15 @@ def main():
 
 def embed(epoch, opt):
     logging.info('loading model with epoch {}'.format(epoch))
-    export_dir = opt.export_dir if opt.export_dir else './output/{}'.format(os.path.basename(opt.checkpoint_path))
-    os.makedirs(export_dir, exist_ok=True)
+    torchglow.util.fix_seed(opt.random_seed)
 
-    model = torchglow.Glow(checkpoint_path=opt.checkpoint_path, epoch=epoch)
+    if opt.export_dir is None:
+        export_dir = '{}/2d_latent_space/{}'.format(
+            torchglow.util.module_output_dir, os.path.basename(opt.checkpoint_path))
+    else:
+        export_dir = opt.export_dir
+    os.makedirs(export_dir, exist_ok=True)
+    model = torchglow.Glow(checkpoint_path=opt.checkpoint_path, checkpoint_epoch=epoch)
     # datasize x dimension
     embeddings, label = model.embed_data(sample_size=opt.sample_size, batch=opt.batch)
     logging.info('latent embedding consists of {} depth'.format(len(embeddings)))

@@ -10,11 +10,10 @@ import torchvision.transforms as transforms
 # from PIL import Image
 from tfrecord.torch.dataset import TFRecordDataset
 
-from ..util import wget
+from ..util import wget, home_dir
 
 # The original processed data_iterator used in Glow paper
 URLS = {'celeba': 'https://openaipublic.azureedge.net/glow-demo/data/celeba-tfr.tar'}
-CACHE_DIR = '{}/.cache/torchglow'.format(os.path.expanduser('~'))
 __all__ = ('get_dataset_image', 'get_image_decoder')
 
 
@@ -124,7 +123,7 @@ def get_dataset_image(data: str, cache_dir: str = None, n_bits_x: int = 8, image
     valid_set : torch.utils.data_iterator.Dataset
         Iterator of validation set for torch.utils.data_iterator.DataLoader.
     """
-    cache_dir = CACHE_DIR if cache_dir is None else cache_dir
+    cache_dir = home_dir if cache_dir is None else cache_dir
 
     t_valid = [transforms.ToTensor(), transforms.Normalize([0.5, 0.5, 0.5], [1, 1, 1])]
     t_train = [

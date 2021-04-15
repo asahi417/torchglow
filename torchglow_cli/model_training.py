@@ -43,7 +43,8 @@ def config_image(parser):
     parser.add_argument('--n-level', help='number of block', default=3, type=int)
     parser.add_argument('--n-bits-x', help='number of bits', default=8, type=int)
     parser.add_argument('--image-size', help='image size', default=32, type=int)
-    parser.add_argument('--export-dir', help='directory to export model weight file', default='./ckpt/image', type=str)
+    parser.add_argument('--export-dir', help='directory to export model weight file', default=None, type=str)
+    parser.add_argument('--checkpoint-name', help='name for model weight file', default=None, type=str)
     return parser
 
 
@@ -57,11 +58,17 @@ def main():
     level = logging.DEBUG if opt.debug else logging.INFO
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
 
+    if opt.export_dir is None:
+        export_dir = '{}/ckpt'.format(torchglow.util.module_output_dir)
+    else:
+        export_dir = opt.export_dir
+
     trainer = torchglow.Glow(
         training_step=opt.training_step,
         epoch=opt.epoch,
         data=opt.data,
-        export_dir=opt.export_dir,
+        export_dir=export_dir,
+        checkpoint_name=opt.checkpoint_name,
         batch=opt.batch,
         lr=opt.lr,
         image_size=opt.image_size,

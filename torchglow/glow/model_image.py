@@ -1,5 +1,6 @@
 """ Glow for 2D image data_iterator """
 import logging
+from itertools import chain
 
 import torch
 import torchvision
@@ -8,7 +9,7 @@ from .model_base import GlowBase
 from .module import GlowNetwork
 from ..config import Config
 from ..data_iterator.data_image import get_dataset_image, get_image_decoder
-from ..util import fix_seed
+from ..util import fix_seed, module_output_dir, flatten_list
 
 __all__ = 'Glow'
 
@@ -20,7 +21,8 @@ class Glow(GlowBase):
                  training_step: int = 50000,
                  epoch: int = 1000000,
                  data: str = 'cifar10',
-                 export_dir: str = './ckpt',
+                 export_dir: str = None,
+                 checkpoint_name: str = None,
                  batch: int = 64,
                  lr: float = 0.001,
                  image_size: int = 32,
@@ -90,6 +92,8 @@ class Glow(GlowBase):
         super(Glow, self).__init__()
         fix_seed(random_seed)
         self.cache_dir = cache_dir
+        # if export_dir is None:
+        #     export_dir = '{}/ckpt'.format(module_output_dir)
         # config
         self.config = Config(
             checkpoint_path=checkpoint_path,
@@ -103,6 +107,7 @@ class Glow(GlowBase):
             batch=batch,
             data=data,
             export_dir=export_dir,
+            checkpoint_name=checkpoint_name,
             filter_size=filter_size,
             n_flow_step=n_flow_step,
             n_level=n_level,
@@ -167,7 +172,7 @@ class Glow(GlowBase):
                  sample_size: int = 16,
                  batch: int = 4,
                  nrow: int = 8,
-                 export_path: str = 'glow_generate_image.png',
+                 export_path: str = 'glow_generated_image.png',
                  eps_std: float = 1):
         """ Generate image from trained GLOW by sampling from learnt latent embedding. """
         assert self.config.is_trained
@@ -192,3 +197,38 @@ class Glow(GlowBase):
     def reconstruct(self, sample_size: int = 5, batch: int = 5):
         decoder = get_image_decoder(n_bits_x=self.config.n_bits_x)
         return self.reconstruct_base(sample_size, batch, decoder)
+
+    def embed_data(self, sample_size: int = 5, batch: int = 5):
+        """ Embed sample from validation set. """
+        assert self.config.is_trained, 'model is not trained'
+        data_train, data_valid = self.setup_data()
+        if data_valid is None:
+            data_valid = data_train
+        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
+        latent_vector = None
+        label = []
+        with torch.no_grad():
+            for x, y in loader:
+                label += y.cpu().tolist()
+                # latent depth, batch, embedding
+                z, _ = self.model(x.to(self.device), return_loss=False)
+                z_all = [[flatten_list(__z) for __z in _z] for _z in z]
+                if latent_vector is None:
+                    latent_vector = z_all
+                else:
+                    latent_vector = [a + b for a, b in zip(latent_vector, z_all)]
+                # for i in z:
+                #     print(len(i))
+                #     print([o.shape for o in i])
+                # input()
+                # latent depth, batch, embedding
+
+                # print([[len(j) for j in i] for i in latent_vector])
+                # z_all = list(zip(*z_all))
+                # print([[len(j) for j in i] for i in z_all])
+
+                # latent_vector += [list(chain(*i)) for i in z_all]
+                if len(latent_vector[0]) > sample_size:
+                    break
+        latent_vector = [i[:sample_size] for i in latent_vector]
+        return latent_vector, label[:sample_size]
