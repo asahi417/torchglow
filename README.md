@@ -13,8 +13,8 @@ torchglow-train-image -s 50000 --batch 256 --batch-init 512 --decay-lr --epoch-v
 ```
 
 ```shell script
-torchglow-generate --checkpoint-path ./ckpt/cifar10 --all-epoch -s 64 -b 64 -n 1
-torchglow-latent --checkpoint-path ./ckpt/cifar10 --all-epoch 
+torchglow-generate --checkpoint-path ./ckpt/image/cifar10 --all-epoch -s 64 -b 32 -n 1
+torchglow-latent --checkpoint-path ./ckpt/image/cifar10 --all-epoch 
 ```
 
 ### CelebA

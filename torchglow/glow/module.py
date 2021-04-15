@@ -459,7 +459,8 @@ class GlowNetwork(nn.Module):
                 return_loss: bool = True,
                 reverse: bool = False,
                 latent_states: List = None,
-                eps_std: float = None):
+                eps_std: float = None,
+                device: str = 'cpu'):
         """ Glow forward inference/reverse sampling module.
 
         Parameters
@@ -491,7 +492,7 @@ class GlowNetwork(nn.Module):
 
             if x is None:
                 # seed variables for sampling data
-                x = torch.zeros([sample_size] + self.last_latent_shape)
+                x = torch.zeros([sample_size] + self.last_latent_shape, device=device)
 
             for layer in reversed(self.layers):
 

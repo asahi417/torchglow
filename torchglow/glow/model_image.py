@@ -177,7 +177,8 @@ class Glow(GlowBase):
         image_n = 0
         with torch.no_grad():
             while True:
-                y, _ = self.model(sample_size=batch, reverse=True, return_loss=False, eps_std=eps_std)
+                y, _ = self.model(
+                    sample_size=batch, reverse=True, return_loss=False, eps_std=eps_std, device=self.device)
                 image_n += len(y)
                 images.append(y)
                 if image_n > sample_size:
