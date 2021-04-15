@@ -11,3 +11,4 @@ ckpt*
 fasttext_prediction.json
 result
 model.*.pt
+torchglow_output
