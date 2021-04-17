@@ -1,4 +1,4 @@
-""" Base Glow Class """
+""" Base Glow Class mainly for model training """
 import logging
 from math import log
 
@@ -7,6 +7,7 @@ from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
 from ..util import get_linear_schedule_with_warmup
+from ..data_iterator.data_image import get_image_decoder
 
 __all__ = 'GlowBase'
 
@@ -16,21 +17,13 @@ class GlowBase(nn.Module):
 
     def __init__(self):
         super().__init__()
-        # a few initialization related to optimization
         self.optimizer = None
         self.scheduler = None
         self.scaler = None
-        self.n_gpu = torch.cuda.device_count()
-        self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
         self.model = None
-        self.n_bins = None  # for image input
+        self.n_bins = None
         self.epoch_elapsed = None
         self.parallel = False
-        self.data_iterator = None
-
-    @property
-    def parameter(self):
-        return self.config.config
 
     def train(self,
               batch_valid: int = 32,
@@ -168,67 +161,6 @@ class GlowBase(nn.Module):
             x = x.to(self.device)
             self.model(x, return_loss=False, initialize_actnorm=True)
 
-    def reconstruct_base(self, sample_size: int = 5, batch: int = 5, decoder=None):
-        """ Reconstruct validation data_iterator """
-        assert self.config.is_trained, 'model is not trained'
-        data_train, data_valid = self.setup_data()
-        if data_valid is None:
-            data_valid = data_train
-        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
-        data_original = []
-        data_reconstruct = []
-        with torch.no_grad():
-            for x in loader:
-                if type(x) is not torch.Tensor:
-                    x = x[0]
-                x = x.to(self.device)
-                z, _ = self.model(x, return_loss=False)
-                y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
-                if decoder is not None:
-                    data_original += decoder(x)
-                    data_reconstruct += decoder(y)
-                else:
-                    data_original += x.cpu().tolist()
-                    data_reconstruct += y.cpu().tolist()
-                if len(data_original) > sample_size:
-                    break
-        return data_original[:sample_size], data_reconstruct[:sample_size]
-
-    def embed_base(self, data=None, batch: int = None):
-        """ Embed arbitrary input into latent space.
-
-        Parameters
-        ----------
-        data : list
-            Data iterator.
-        batch : int
-            Batch size.
-
-        Returns
-        -------
-        A list of 1-dim embedding from the given data, in which the n_dim depends on underlying embedding model.
-        """
-        assert self.config.is_trained, 'model is not trained'
-        self.model.eval()
-        batch = batch if batch is not None else self.config.batch
-        if self.data_iterator is None:
-            raise ValueError('embedding arbitrary data is not supported in this model')
-        data_loader = torch.utils.data.DataLoader(self.data_iterator(data), batch_size=batch)
-        latent_variable = []
-        converted_input = []
-        with torch.no_grad():
-            for x in data_loader:
-                converted_input += x.reshape(len(x), -1).cpu().tolist()
-                if type(x) is not torch.Tensor:
-                    x = x[0]
-                x = x.to(self.device)
-                z, _ = self.model(x, return_loss=False)
-                if type(z) is list:  # for multi-scale latent variables used in image model
-                    latent_variable += [z_.cpu().tolist() for z_ in z]
-                else:
-                    latent_variable += z.cpu().tolist()
-        return latent_variable, converted_input
-
     def train_single_epoch(self, data_loader, epoch_n: int, writer, progress_interval):
         self.model.train()
         total_bpd = 0
@@ -300,3 +232,31 @@ class GlowBase(nn.Module):
         bpd = total_bpd / data_size
         writer.add_scalar('valid/bpd', bpd, epoch_n)
         return bpd
+
+    def reconstruct(self, sample_size: int = 5, batch: int = 5):
+        """ Reconstruct validation data_iterator """
+        decoder = get_image_decoder(n_bits_x=self.config.n_bits_x)
+        assert self.config.is_trained, 'model is not trained'
+        data_train, data_valid = self.setup_data()
+        if data_valid is None:
+            data_valid = data_train
+        loader = torch.utils.data.DataLoader(data_valid, batch_size=batch)
+        data_original = []
+        data_reconstruct = []
+        with torch.no_grad():
+            for x in loader:
+                if type(x) is not torch.Tensor:
+                    x = x[0]
+                x = x.to(self.device)
+                z, _ = self.model(x, return_loss=False)
+                y, _ = self.model(latent_states=z, reverse=True, return_loss=False)
+                if decoder is not None:
+                    data_original += decoder(x)
+                    data_reconstruct += decoder(y)
+                else:
+                    data_original += x.cpu().tolist()
+                    data_reconstruct += y.cpu().tolist()
+                if len(data_original) > sample_size:
+                    break
+        return data_original[:sample_size], data_reconstruct[:sample_size]
+

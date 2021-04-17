@@ -5,7 +5,6 @@ import os
 from glob import glob
 
 import numpy as np
-from sklearn.datasets import load_digits
 import matplotlib.pyplot as plt
 import seaborn as sns
 

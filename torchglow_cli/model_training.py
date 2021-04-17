@@ -43,8 +43,7 @@ def config_image(parser):
     parser.add_argument('--n-level', help='number of block', default=3, type=int)
     parser.add_argument('--n-bits-x', help='number of bits', default=8, type=int)
     parser.add_argument('--image-size', help='image size', default=32, type=int)
-    parser.add_argument('--export-dir', help='directory to export model weight file', default=None, type=str)
-    parser.add_argument('--checkpoint-name', help='name for model weight file', default=None, type=str)
+    parser.add_argument('--export', help='directory to export model weight file', default=None, type=str)
     return parser
 
 
@@ -67,8 +66,7 @@ def main():
         training_step=opt.training_step,
         epoch=opt.epoch,
         data=opt.data,
-        export_dir=export_dir,
-        checkpoint_name=opt.checkpoint_name,
+        export=export,
         batch=opt.batch,
         lr=opt.lr,
         image_size=opt.image_size,

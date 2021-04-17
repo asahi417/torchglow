@@ -12,7 +12,7 @@ def main():
     # argument
     parser = argparse.ArgumentParser(description='Sampling image from latent space.')
     parser.add_argument('-s', '--sample-size', help='sample size per image', default=16, type=int)
-    parser.add_argument('-n', '--n-image', help='number of image', default=2, type=int)
+    parser.add_argument('-n', '--n-image', help='number of image', default=1, type=int)
     parser.add_argument('--nrow', help='number of row in image', default=8, type=int)
     parser.add_argument('-b', '--batch', help='batch size', default=4, type=int)
     parser.add_argument('-c', '--checkpoint-path', help='train existing checkpoint',

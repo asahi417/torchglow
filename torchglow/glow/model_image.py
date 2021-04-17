@@ -1,6 +1,5 @@
 """ Glow for 2D image data_iterator """
 import logging
-from itertools import chain
 
 import torch
 import torchvision
@@ -9,7 +8,7 @@ from .model_base import GlowBase
 from .module import GlowNetwork
 from ..config import Config
 from ..data_iterator.data_image import get_dataset_image, get_image_decoder
-from ..util import fix_seed, module_output_dir, flatten_list
+from ..util import fix_seed, flatten_list
 
 __all__ = 'Glow'
 
@@ -21,8 +20,7 @@ class Glow(GlowBase):
                  training_step: int = 50000,
                  epoch: int = 1000000,
                  data: str = 'cifar10',
-                 export_dir: str = None,
-                 checkpoint_name: str = None,
+                 export: str = None,
                  batch: int = 64,
                  lr: float = 0.001,
                  image_size: int = 32,
@@ -92,8 +90,6 @@ class Glow(GlowBase):
         super(Glow, self).__init__()
         fix_seed(random_seed)
         self.cache_dir = cache_dir
-        # if export_dir is None:
-        #     export_dir = '{}/ckpt'.format(module_output_dir)
         # config
         self.config = Config(
             checkpoint_path=checkpoint_path,
@@ -106,8 +102,7 @@ class Glow(GlowBase):
             epoch=epoch,
             batch=batch,
             data=data,
-            export_dir=export_dir,
-            checkpoint_name=checkpoint_name,
+            export=export,
             filter_size=filter_size,
             n_flow_step=n_flow_step,
             n_level=n_level,
@@ -151,6 +146,8 @@ class Glow(GlowBase):
             self.model.load_state_dict(torch.load(model_weight_path, map_location=torch.device('cpu')))
 
         # for multi GPUs
+        self.n_gpu = torch.cuda.device_count()
+        self.device = 'cuda' if self.n_gpu > 0 else 'cpu'
         self.parallel = False
         if torch.cuda.device_count() > 1:
             self.parallel = True
@@ -161,6 +158,10 @@ class Glow(GlowBase):
         logging.info('Glow running on {} GPUs'.format(self.n_gpu))
 
         self.n_bins = 2 ** self.config.n_bits_x
+
+    @property
+    def parameter(self):
+        return self.config.config
 
     def setup_data(self):
         """ Initialize training dataset. """
@@ -194,10 +195,6 @@ class Glow(GlowBase):
         torchvision.utils.save_image(images, export_path, normalize=True, nrow=nrow)
         logging.info('Glow generated image saved at {}'.format(export_path))
 
-    def reconstruct(self, sample_size: int = 5, batch: int = 5):
-        decoder = get_image_decoder(n_bits_x=self.config.n_bits_x)
-        return self.reconstruct_base(sample_size, batch, decoder)
-
     def embed_data(self, sample_size: int = 5, batch: int = 5):
         """ Embed sample from validation set. """
         assert self.config.is_trained, 'model is not trained'
@@ -217,17 +214,6 @@ class Glow(GlowBase):
                     latent_vector = z_all
                 else:
                     latent_vector = [a + b for a, b in zip(latent_vector, z_all)]
-                # for i in z:
-                #     print(len(i))
-                #     print([o.shape for o in i])
-                # input()
-                # latent depth, batch, embedding
-
-                # print([[len(j) for j in i] for i in latent_vector])
-                # z_all = list(zip(*z_all))
-                # print([[len(j) for j in i] for i in z_all])
-
-                # latent_vector += [list(chain(*i)) for i in z_all]
                 if len(latent_vector[0]) > sample_size:
                     break
         latent_vector = [i[:sample_size] for i in latent_vector]
