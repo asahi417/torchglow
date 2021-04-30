@@ -57,10 +57,10 @@ def main():
     level = logging.DEBUG if opt.debug else logging.INFO
     logging.basicConfig(format='%(asctime)s %(levelname)-8s %(message)s', level=level, datefmt='%Y-%m-%d %H:%M:%S')
 
-    if opt.export_dir is None:
-        export_dir = '{}/ckpt'.format(torchglow.util.module_output_dir)
+    if opt.export is None:
+        export = '{}/ckpt'.format(torchglow.util.module_output_dir)
     else:
-        export_dir = opt.export_dir
+        export = opt.export_dir
 
     trainer = torchglow.Glow(
         training_step=opt.training_step,
