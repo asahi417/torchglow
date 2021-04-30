@@ -60,7 +60,7 @@ def main():
     if opt.export is None:
         export = '{}/ckpt'.format(torchglow.util.module_output_dir)
     else:
-        export = opt.export_dir
+        export = opt.export
 
     trainer = torchglow.Glow(
         training_step=opt.training_step,
